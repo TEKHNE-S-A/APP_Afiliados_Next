@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diagnóstico de Conectividad - Backend</title>
+  <link rel="stylesheet" href="/admin-shared.css" />
+  <script src="/admin-nav.js"></script>
+  <script src="/admin-shared.js"></script>
+  <style>
+    .container { max-width: 1200px; margin: 0 auto; }
+    header h1 { color: #333; font-size: 20px; }
+    .subtitle { color: #666; font-size: 13px; margin-top: 4px; }
+
+    .card {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    }
+    .card h2 { color: #333; margin-bottom: 12px; font-size: 18px; }
+    .muted { color: #6b7280; font-size: 13px; margin-bottom: 8px; }
+
+    .action-btn {
+      display: inline-block;
+      padding: 10px 14px;
+      background: #667eea;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .action-btn:hover { background: #5568d3; }
+    .action-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+    .action-btn.secondary {
+      background: #6b7280;
+    }
+    .action-btn.secondary:hover {
+      background: #4b5563;
+    }
+
+    .field-label {
+      display: block;
+      margin-top: 10px;
+      margin-bottom: 6px;
+      font-size: 13px;
+      color: #4b5563;
+      font-weight: 600;
+    }
+    .field-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      max-width: 450px;
+    }
+    .field-input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+    }
+    .action-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .auth-status {
+      margin-top: 10px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .auth-status.ok { color: #15803d; }
+    .auth-status.error { color: #b91c1c; }
+
+    .result-box {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      white-space: pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+      font-size: 12px;
+      display: none;
+    }
+    .result-box.ok {
+      border-left: 4px solid #16a34a;
+      background: #f0fdf4;
+    }
+    .result-box.error {
+      border-left: 4px solid #dc2626;
+      background: #fef2f2;
+    }
+
+    .diag-panel {
+      margin-top: 14px;
+      display: none;
+      gap: 14px;
+    }
+    .diag-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+    }
+    .diag-stat {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 12px;
+    }
+    .diag-stat-label {
+      font-size: 12px;
+      color: #6b7280;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .diag-stat-value {
+      font-size: 22px;
+      color: #111827;
+      font-weight: 700;
+    }
+    .diag-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+    }
+    .diag-card {
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      background: #fff;
+      padding: 14px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+    }
+    .diag-card.ok {
+      border-left: 4px solid #16a34a;
+      background: #f0fdf4;
+    }
+    .diag-card.error {
+      border-left: 4px solid #dc2626;
+      background: #fef2f2;
+    }
+    .diag-card h3 {
+      font-size: 15px;
+      color: #111827;
+      margin-bottom: 8px;
+    }
+    .diag-line {
+      font-size: 13px;
+      color: #374151;
+      margin-top: 4px;
+      word-break: break-word;
+    }
+    .diag-pill {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .diag-pill.ok {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .diag-pill.error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .diag-raw { margin-top: 10px; }
+    .diag-raw summary {
+      cursor: pointer;
+      font-size: 13px;
+      color: #4b5563;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+  <div class="container">
+    <header>
+      <div>
+        <h1>🌐 Diagnóstico de conectividad</h1>
+        <p class="subtitle">Pruebas SOAP y suite crítica del backend con acceso de administrador.</p>
+      </div>
+      <nav aria-label="Navegación principal" class="nav-links">
+        <a href="/">🏠 Inicio backend</a>
+        <a href="/admin">⚙️ Parámetros</a>
+        <a href="/admin/cartilla">🗺️ Cartilla</a>
+        <a href="/admin/info-util-ui">📌 Info útil</a>
+        <a href="/admin/soporte">🧾 Soporte</a>
+        <a href="/admin/usuarios">👥 Usuarios</a>
+        <a href="/admin/notificaciones">📣 Notificaciones</a>
+      </nav>
+    </header>
+    <nav id="adminBreadcrumb" class="admin-breadcrumb" aria-label="Migas de pan"></nav>
+
+    <main id="main-content">
+
+    <div class="card">
+      <h2>Ejecutar diagnóstico seguro</h2>
+      <p class="muted">Valida usuario/contraseña admin y corre en un paso conectividad SOAP + suite de endpoints internos.</p>
+
+      <label class="field-label" for="diagUsername">Usuario admin</label>
+      <input class="field-input" id="diagUsername" type="text" autocomplete="username" placeholder="admin@test.local">
+
+      <label class="field-label" for="diagPassword">Contraseña</label>
+      <input class="field-input" id="diagPassword" type="password" autocomplete="current-password" placeholder="********">
+
+      <div class="action-row">
+        <button class="action-btn" id="btnRunDiagnostics">Validar acceso y ejecutar diagnóstico</button>
+        <button class="action-btn secondary" id="btnClearDiagSession" type="button">Cerrar sesión diagnóstico</button>
+      </div>
+
+      <div id="diagAuthStatus" class="auth-status">Sin verificar</div>
+      <div id="diagPanel" class="diag-panel">
+        <div id="diagSummary" class="diag-summary"></div>
+        <div id="diagCards" class="diag-grid"></div>
+        <details class="diag-raw">
+          <summary>Ver detalle técnico JSON</summary>
+          <pre id="wsConnectivityResult" class="result-box"></pre>
+        </details>
+      </div>
+    </div>
+    </main>
+    <footer role="contentinfo">
+      <p class="admin-footer-text">Admin OSEP &nbsp;&middot;&nbsp; Diagnóstico de Conectividad</p>
+    </footer>
+  </div>
+
+  <script>
+    // Migrado a sesión compartida (AdminSession)
+    let diagAuthToken = AdminSession.getToken() || ''
+    let diagAuthUser = AdminSession.getUser() || ''
+
+    const els = {
+      username: document.getElementById('diagUsername'),
+      password: document.getElementById('diagPassword'),
+      authStatus: document.getElementById('diagAuthStatus'),
+      panel: document.getElementById('diagPanel'),
+      summary: document.getElementById('diagSummary'),
+      cards: document.getElementById('diagCards'),
+      raw: document.getElementById('wsConnectivityResult'),
+      runBtn: document.getElementById('btnRunDiagnostics'),
+      clearBtn: document.getElementById('btnClearDiagSession'),
+    }
+
+    function updateAuthStatus(ok, message) {
+      els.authStatus.textContent = message
+      els.authStatus.className = `auth-status ${ok ? 'ok' : 'error'}`
+    }
+
+    function clearDiagnosticSession() {
+      diagAuthToken = ''
+      diagAuthUser = ''
+      AdminSession.clear()
+      els.username.value = ''
+      els.password.value = ''
+      updateAuthStatus(false, 'Sesión de diagnóstico cerrada')
+    }
+
+    async function verifyDiagnosticAccess() {
+      const username = els.username.value.trim()
+      const password = els.password.value
+
+      if (diagAuthToken && !username && !password) {
+        updateAuthStatus(true, `Sesión admin activa: ${diagAuthUser || 'token guardado'}`)
+        return { user: diagAuthUser || 'admin' }
+      }
+
+      if (!username || !password) {
+        throw new Error('Ingresa usuario y contraseña de administrador.')
+      }
+
+      updateAuthStatus(false, 'Verificando acceso...')
+
+      try {
+        const res = await fetch('/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        })
+
+        const data = await res.json()
+        if (!res.ok || !data.token) {
+          throw new Error(data?.message || data?.error || 'No se pudo validar acceso')
+        }
+
+        diagAuthToken = data.token
+        diagAuthUser = data?.user?.email || username
+        AdminSession.set(diagAuthToken, diagAuthUser)
+        updateAuthStatus(true, `Acceso verificado: ${diagAuthUser}`)
+        return { user: diagAuthUser }
+      } catch (error) {
+        clearDiagnosticSession()
+        updateAuthStatus(false, `Error de acceso: ${error?.message || String(error)}`)
+        throw error
+      }
+    }
+
+    async function fetchDiagnosticResult(path) {
+      try {
+        const res = await fetch(path, {
+          headers: { 'Authorization': `Bearer ${diagAuthToken}` }
+        })
+        const contentType = res.headers.get('content-type') || ''
+        const raw = await res.text()
+
+        let data = null
+        try {
+          data = raw ? JSON.parse(raw) : {}
+        } catch {
+          data = {
+            ok: false,
+            path,
+            status: res.status,
+            contentType,
+            error: 'La respuesta no es JSON válido',
+            bodyPreview: raw.slice(0, 250),
+            hint: 'Verifica autenticación admin y estado del backend.'
+          }
+        }
+
+        if (typeof data.path === 'undefined') {
+          data.path = path
+        }
+        if (typeof data.status === 'undefined') {
+          data.status = res.status
+        }
+
+        if (res.status === 401 || res.status === 403) {
+          clearDiagnosticSession()
+          updateAuthStatus(false, 'La sesión admin expiró o no tiene permisos. Vuelve a validar acceso.')
+        }
+
+        return {
+          ok: res.ok && data.ok !== false,
+          path,
+          data,
+        }
+      } catch (error) {
+        return {
+          ok: false,
+          path,
+          data: { ok: false, path, error: error?.message || String(error) },
+        }
+      }
+    }
+
+    function createSummaryItem(label, value) {
+      return `
+        <div class="diag-stat">
+          <div class="diag-stat-label">${label}</div>
+          <div class="diag-stat-value">${value}</div>
+        </div>
+      `
+    }
+
+    function createDiagnosticCard(title, payload) {
+      const ok = payload?.ok === true
+      const status = typeof payload?.status !== 'undefined' ? payload.status : '-'
+      const latency = typeof payload?.latencyMs !== 'undefined' ? `${payload.latencyMs} ms` : '-'
+      const extraLines = []
+
+      if (Array.isArray(payload?.services)) {
+        payload.services.forEach((service) => {
+          extraLines.push(`<div class="diag-line"><strong>${service.service}:</strong> ${service.ok ? 'OK' : 'Error'}${service.status ? ` • HTTP ${service.status}` : ''}${service.latencyMs ? ` • ${service.latencyMs} ms` : ''}</div>`)
+        })
+      }
+
+      if (Array.isArray(payload?.checks)) {
+        const failed = payload.checks.filter((item) => !item.ok).length
+        extraLines.push(`<div class="diag-line"><strong>Checks:</strong> ${payload.checks.length} totales • ${failed} con falla</div>`)
+      }
+
+      if (payload?.error) {
+        extraLines.push(`<div class="diag-line"><strong>Error:</strong> ${payload.error}</div>`)
+      }
+
+      if (payload?.hint) {
+        extraLines.push(`<div class="diag-line"><strong>Sugerencia:</strong> ${payload.hint}</div>`)
+      }
+
+      return `
+        <div class="diag-card ${ok ? 'ok' : 'error'}">
+          <span class="diag-pill ${ok ? 'ok' : 'error'}">${ok ? 'OK' : 'Error'}</span>
+          <h3>${title}</h3>
+          <div class="diag-line"><strong>HTTP:</strong> ${status}</div>
+          <div class="diag-line"><strong>Latencia:</strong> ${latency}</div>
+          ${extraLines.join('')}
+        </div>
+      `
+    }
+
+    function renderDiagnosticOutput(combined) {
+      els.panel.style.display = 'grid'
+      els.raw.style.display = 'block'
+      els.raw.className = `result-box ${combined.ok ? 'ok' : 'error'}`
+      els.raw.textContent = JSON.stringify(combined, null, 2)
+
+      const suiteTotals = combined?.diagnostics?.suite?.totals || {}
+      els.summary.innerHTML = [
+        createSummaryItem('Estado general', combined.ok ? 'OK' : 'Error'),
+        createSummaryItem('Usuario', combined.authenticatedAs || '-'),
+        createSummaryItem('Checks OK', typeof suiteTotals.ok !== 'undefined' ? suiteTotals.ok : '-'),
+        createSummaryItem('Checks fallidos', typeof suiteTotals.failed !== 'undefined' ? suiteTotals.failed : '-'),
+      ].join('')
+
+      els.cards.innerHTML = [
+        createDiagnosticCard('Conectividad SOAP', combined.diagnostics.soap),
+        createDiagnosticCard('Suite completa', combined.diagnostics.suite),
+      ].join('')
+    }
+
+    async function runSecureDiagnostics() {
+      els.panel.style.display = 'grid'
+      els.raw.style.display = 'block'
+      els.raw.className = 'result-box'
+      els.raw.textContent = 'Validando acceso y ejecutando diagnóstico...'
+      els.runBtn.disabled = true
+
+      try {
+        const auth = await verifyDiagnosticAccess()
+        const [soap, suite] = await Promise.all([
+          fetchDiagnosticResult('/health/ws-connectivity'),
+          fetchDiagnosticResult('/health/connectivity-suite'),
+        ])
+
+        const combined = {
+          ok: soap.ok && suite.ok,
+          authenticatedAs: auth.user,
+          executedAt: new Date().toISOString(),
+          diagnostics: {
+            soap: soap.data,
+            suite: suite.data,
+          },
+        }
+
+        renderDiagnosticOutput(combined)
+      } catch (error) {
+        els.raw.className = 'result-box error'
+        els.raw.textContent = JSON.stringify({ ok: false, error: error?.message || String(error) }, null, 2)
+      } finally {
+        els.runBtn.disabled = false
+      }
+    }
+
+    async function restoreDiagnosticSession() {
+      if (diagAuthUser) {
+        els.username.value = diagAuthUser
+      }
+
+      if (!diagAuthToken) {
+        updateAuthStatus(false, 'Sin verificar')
+        return
+      }
+
+      updateAuthStatus(false, 'Verificando sesión guardada...')
+      try {
+        const test = await fetch('/health/ws-connectivity', {
+          headers: { 'Authorization': `Bearer ${diagAuthToken}` }
+        })
+
+        if (test.ok || test.status === 503) {
+          updateAuthStatus(true, `Sesión admin activa: ${diagAuthUser || 'token guardado'}`)
+          return
+        }
+
+        clearDiagnosticSession()
+      } catch {
+        clearDiagnosticSession()
+      }
+    }
+
+    els.runBtn.addEventListener('click', runSecureDiagnostics)
+    els.clearBtn.addEventListener('click', clearDiagnosticSession)
+    restoreDiagnosticSession()
+  </script>
+</body>
+</html>

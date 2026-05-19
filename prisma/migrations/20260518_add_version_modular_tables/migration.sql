@@ -1,0 +1,29 @@
+-- Migracion controlada: agrega columna version solo en tablas nuevas/modulares.
+-- Diseñada para no romper legado (usa IF EXISTS / IF NOT EXISTS).
+
+ALTER TABLE IF EXISTS public.users
+  ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 1;
+
+ALTER TABLE IF EXISTS public.notifications
+  ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 1;
+
+ALTER TABLE IF EXISTS public.push_tokens
+  ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 1;
+
+ALTER TABLE IF EXISTS public.app_noticias
+  ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 1;
+
+ALTER TABLE IF EXISTS public.app_credencial_layout
+  ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 1;
+
+ALTER TABLE IF EXISTS public.tramites
+  ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 1;
+
+ALTER TABLE IF EXISTS public.transactions
+  ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 1;
+
+ALTER TABLE IF EXISTS public.beneficiaries
+  ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 1;
+
+ALTER TABLE IF EXISTS public.mensajes_soporte
+  ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 1;

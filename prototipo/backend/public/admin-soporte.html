@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bitácora de Soporte - Backend</title>
+  <link rel="stylesheet" href="/admin-shared.css" />
+  <script src="/admin-nav.js"></script>
+  <script src="/admin-shared.js"></script>
+  <style>
+    .login-container {
+      max-width: 420px;
+      margin: 90px auto;
+      background: white;
+      padding: 36px;
+      border-radius: 14px;
+      box-shadow: 0 16px 44px rgba(0, 0, 0, 0.18);
+    }
+    .login-container h1 {
+      color: #1f2937;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    .login-container p {
+      color: #6b7280;
+      text-align: center;
+      margin-bottom: 26px;
+    }
+    .app-container {
+      display: none;
+    }
+    .container {
+      max-width: 1500px;
+      margin: 0 auto;
+    }
+    .header-subtitle {
+      color: #6b7280;
+      font-size: 13px;
+      margin-top: 4px;
+    }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #4b5563;
+      font-size: 14px;
+    }
+    .search-panel,
+    .summary-grid,
+    .timeline-panel,
+    .sessions-panel,
+    .audit-panel {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+      padding: 20px;
+    }
+    .search-row {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) 140px auto;
+      gap: 14px;
+      align-items: end;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .form-group label {
+      color: #374151;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 14px;
+    }
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #2563eb;
+    }
+    .summary-grid {
+      display: none;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 16px;
+    }
+    .summary-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+    .summary-card .label {
+      color: #6b7280;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+    .summary-card .value {
+      color: #111827;
+      font-size: 28px;
+      font-weight: 800;
+    }
+    .summary-card .secondary {
+      margin-top: 8px;
+      color: #374151;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    .results-grid {
+      display: none;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 20px;
+      align-items: start;
+    }
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .section-title h2 {
+      color: #111827;
+      font-size: 18px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 5px 11px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+    .pill.warn {
+      background: #fef3c7;
+      color: #b45309;
+    }
+    .pill.danger {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+    .user-card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+    }
+    .user-field {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 14px;
+      background: #f9fafb;
+    }
+    .user-field .label {
+      color: #6b7280;
+      font-size: 12px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .user-field .value {
+      color: #111827;
+      font-size: 15px;
+      font-weight: 700;
+      word-break: break-word;
+    }
+    .timeline-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .timeline-item {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 14px;
+      background: #fff;
+    }
+    .timeline-item.audit {
+      border-left: 5px solid #2563eb;
+    }
+    .timeline-item.session {
+      border-left: 5px solid #059669;
+      background: #f0fdf4;
+    }
+    .timeline-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+    .timeline-title {
+      color: #111827;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+    .timeline-meta {
+      color: #6b7280;
+      font-size: 12px;
+      text-align: right;
+      min-width: 160px;
+    }
+    .timeline-summary {
+      color: #374151;
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+    .timeline-extra {
+      color: #4b5563;
+      font-size: 13px;
+      line-height: 1.5;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+    }
+    .timeline-json {
+      margin-top: 10px;
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 12px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+      .timeline-detail-toggle { margin-top: 10px; cursor: pointer; }
+    .session-table,
+    .audit-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .session-table th,
+    .session-table td,
+    .audit-table th,
+    .audit-table td {
+      border-bottom: 1px solid #e5e7eb;
+      padding: 10px 8px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 13px;
+    }
+    .session-table th,
+    .audit-table th {
+      color: #4b5563;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .muted {
+      color: #6b7280;
+      font-size: 13px;
+    }
+    .hidden {
+      display: none;
+    }
+    @media (max-width: 980px) {
+      .search-row,
+      .results-grid {
+        grid-template-columns: 1fr;
+      }
+      .timeline-top {
+        flex-direction: column;
+      }
+      .timeline-meta {
+        text-align: left;
+        min-width: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+  <div id="loginScreen" class="login-container">
+    <h1>🧾 Bitácora de Soporte</h1>
+    <p>Buscá un afiliado y reconstruí rápidamente estado, sesiones y eventos recientes.</p>
+    <div id="loginError" class="error hidden"></div>
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="username">Usuario admin</label>
+        <input type="text" id="username" required autocomplete="username" placeholder="admin@test.local">
+      </div>
+      <div class="form-group">
+        <label for="password">Contraseña</label>
+        <input type="password" id="password" required autocomplete="current-password" placeholder="admin123">
+      </div>
+      <button type="submit" class="btn" id="loginBtn">Iniciar sesión</button>
+    </form>
+  </div>
+
+  <div id="appScreen" class="app-container">
+    <div class="container">
+      <header>
+        <div>
+          <h1>🧾 Bitácora de Soporte</h1>
+          <div class="header-subtitle">Timeline resumido por afiliado usando usuarios, sesiones activas y auditoría administrativa.</div>
+        </div>
+        <nav aria-label="Navegación principal" class="nav-links">
+          <a href="/">🏠 Inicio</a>
+          <a href="/admin">⚙️ Parámetros</a>
+          <a href="/admin/usuarios">👥 Usuarios</a>
+          <a href="/admin/cartilla">🗺️ Cartilla</a>
+          <a href="/admin/info-util-ui">📌 Info útil</a>
+          <a href="/admin/diagnostico">🌐 Diagnóstico</a>
+          <a href="/admin/notificaciones">📣 Notificaciones</a>
+        </nav>
+        <div class="user-info">
+          <span id="userInfo"></span>
+          <button class="btn btn-danger btn-sm" onclick="logout()">Cerrar sesión</button>
+        </div>
+      </header>
+      <nav id="adminBreadcrumb" class="admin-breadcrumb" aria-label="Migas de pan"></nav>
+
+      <main id="main-content">
+
+      <div id="globalError" class="error hidden"></div>
+
+      <section class="search-panel">
+        <div class="section-title">
+          <h2>🔍 Búsqueda de afiliado</h2>
+          <span class="pill">email, DNI, CUIL o nuusuid</span>
+        </div>
+        <form id="searchForm" class="search-row">
+          <div class="form-group">
+            <label for="searchQuery">Búsqueda</label>
+            <input type="text" id="searchQuery" placeholder="Ej: marianr@tekhne.com.ar o 20288787655" required>
+          </div>
+          <div class="form-group">
+            <label for="searchLimit">Eventos</label>
+            <select id="searchLimit">
+              <option value="20">20</option>
+              <option value="30" selected>30</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+          <button type="submit" class="btn" id="searchBtn">🔍 Buscar</button>
+        </form>
+      </section>
+
+      <section id="summaryGrid" class="summary-grid"></section>
+
+      <div id="resultsGrid" class="results-grid">
+        <div>
+          <section class="timeline-panel">
+            <div class="section-title">
+              <h2>🕐 Línea de tiempo</h2>
+              <span id="timelineCount" class="pill">0 eventos</span>
+            </div>
+            <div id="timelineList" class="timeline-list"></div>
+          </section>
+        </div>
+        <div>
+          <section class="sessions-panel">
+            <div class="section-title">
+              <h2>👤 Estado actual</h2>
+              <span id="userStatusPill" class="pill">Sin datos</span>
+            </div>
+            <div id="userCardGrid" class="user-card-grid"></div>
+          </section>
+
+          <section class="sessions-panel">
+            <div class="section-title">
+              <h2>💻 Sesiones activas</h2>
+              <span id="sessionsCount" class="pill">0</span>
+            </div>
+            <table class="session-table">
+              <thead>
+                <tr>
+                  <th scope="col">Dispositivo</th>
+                  <th scope="col">IP</th>
+                  <th scope="col">Actividad</th>
+                </tr>
+              </thead>
+              <tbody id="sessionsTableBody"></tbody>
+            </table>
+          </section>
+
+          <section class="audit-panel">
+            <div class="section-title">
+              <h2>📋 Eventos auditados</h2>
+              <span id="auditCount" class="pill">0</span>
+            </div>
+            <table class="audit-table">
+              <thead>
+                <tr>
+                  <th scope="col">Fecha</th>
+                  <th scope="col">Entidad</th>
+                  <th scope="col">Acción</th>
+                  <th scope="col">Resumen</th>
+                </tr>
+              </thead>
+              <tbody id="auditTableBody"></tbody>
+            </table>
+          </section>
+        </div>
+      </div>
+      </main>
+      <footer role="contentinfo">
+        <p class="admin-footer-text">Admin OSEP &nbsp;&middot;&nbsp; Bitácora de Soporte</p>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin;
+    let authToken = null;
+
+    // ── Auto-login si hay sesión guardada ─────────────────────────────────
+    initAdminPanelAuth({
+      loginId: 'loginScreen',
+      appId: 'appScreen',
+      userInfoId: 'userInfo',
+      onReady(token, user) {
+        authToken = token;
+      }
+    });
+
+    function showError(message, targetId = 'globalError') {
+      const target = document.getElementById(targetId);
+      target.textContent = message;
+      target.classList.remove('hidden');
+    }
+
+    function hideError(targetId = 'globalError') {
+      document.getElementById(targetId).classList.add('hidden');
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function formatDate(value) {
+      if (!value) return 'Sin dato';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return String(value);
+      return date.toLocaleString('es-AR');
+    }
+
+    async function authFetch(path, options = {}) {
+      const response = await fetch(`${API_BASE}${path}`, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(options.headers || {}),
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.message || data.error || 'Error de red');
+      }
+      return data;
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      hideError('loginError');
+      const loginBtn = document.getElementById('loginBtn');
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Ingresando...';
+
+      try {
+        const response = await fetch(`${API_BASE}/admin/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: document.getElementById('username').value,
+            password: document.getElementById('password').value,
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'No se pudo iniciar sesión');
+        }
+
+        authToken = data.token;
+        AdminSession.set(data.token, document.getElementById('username').value);
+        document.getElementById('userInfo').textContent = `Admin: ${data.user?.username || document.getElementById('username').value}`;
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('appScreen').style.display = 'block';
+      } catch (error) {
+        showError(error.message, 'loginError');
+      } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Iniciar sesión';
+      }
+    });
+
+    document.getElementById('searchForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      hideError();
+      const searchBtn = document.getElementById('searchBtn');
+      searchBtn.disabled = true;
+      searchBtn.textContent = '⏳ Buscando...';
+
+      try {
+        const query = document.getElementById('searchQuery').value.trim();
+        const limit = document.getElementById('searchLimit').value;
+        const data = await authFetch(`/admin/support/timeline?q=${encodeURIComponent(query)}&limit=${encodeURIComponent(limit)}`);
+        renderSupportTimeline(data);
+      } catch (error) {
+        document.getElementById('summaryGrid').style.display = 'none';
+        document.getElementById('resultsGrid').style.display = 'none';
+        showError(error.message || 'No se pudo cargar la bitácora');
+      } finally {
+        searchBtn.disabled = false;
+        searchBtn.textContent = '🔍 Buscar';
+      }
+    });
+
+    function renderSupportTimeline(data) {
+      const user = data.user || {};
+      const stats = data.stats || {};
+      const sessions = data.sessions || [];
+      const auditEvents = data.auditEvents || [];
+      const timeline = data.timeline || [];
+
+      const summaryGrid = document.getElementById('summaryGrid');
+      summaryGrid.style.display = 'grid';
+      summaryGrid.innerHTML = `
+        <div class="summary-card">
+          <div class="label">Afiliado</div>
+          <div class="value">${escapeHtml(user.nombre || 'Sin nombre')}</div>
+          <div class="secondary">${escapeHtml(user.email || 'Sin email')}</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">Sesiones activas</div>
+          <div class="value">${Number(stats.activeSessions || 0)}</div>
+          <div class="secondary">Refresh tokens activos: ${sessions.filter((item) => item.hasRefreshToken).length}</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">Credenciales</div>
+          <div class="value">${Number(stats.credenciales || 0)}</div>
+          <div class="secondary">Eventos auditados: ${Number(stats.auditEvents || 0)}</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">Estado</div>
+          <div class="value">${user.desactivado ? 'Baja' : 'Activo'}</div>
+          <div class="secondary">${user.isBackendAdmin ? 'También es admin backend' : 'Usuario app'}</div>
+        </div>
+      `;
+
+      const userStatusPill = document.getElementById('userStatusPill');
+      userStatusPill.textContent = user.desactivado ? 'Desactivado' : 'Activo';
+      userStatusPill.className = `pill ${user.desactivado ? 'danger' : ''}`;
+
+      document.getElementById('userCardGrid').innerHTML = [
+        ['Nuusuid', user.nuusuid],
+        ['AfiliadoId', user.afiliadoId],
+        ['Email', user.email],
+        ['Nombre', user.nombre],
+        ['Admin backend', user.isBackendAdmin ? 'Sí' : 'No'],
+        ['Eventos timeline', stats.totalTimelineItems || 0],
+      ].map(([label, value]) => `
+        <div class="user-field">
+          <div class="label">${escapeHtml(label)}</div>
+          <div class="value">${escapeHtml(value || 'Sin dato')}</div>
+        </div>
+      `).join('');
+
+      document.getElementById('sessionsCount').textContent = String(sessions.length);
+      document.getElementById('sessionsTableBody').innerHTML = sessions.length
+        ? sessions.map((session) => `
+          <tr>
+            <td>
+              <strong>${escapeHtml(session.platform || 'Sin plataforma')}</strong><br>
+              <span class="muted">${escapeHtml(session.deviceId || session.appVersion || 'Sin deviceId')}</span>
+            </td>
+            <td>${escapeHtml(session.ip || 'Sin IP')}</td>
+            <td>
+              <strong>${escapeHtml(formatDate(session.lastActivityAt || session.createdAt))}</strong><br>
+              <span class="muted">Creada: ${escapeHtml(formatDate(session.createdAt))}</span>
+            </td>
+          </tr>
+        `).join('')
+        : '<tr><td colspan="3" class="muted">No hay sesiones activas.</td></tr>';
+
+      document.getElementById('auditCount').textContent = String(auditEvents.length);
+      document.getElementById('auditTableBody').innerHTML = auditEvents.length
+        ? auditEvents.map((eventItem) => `
+          <tr>
+            <td>${escapeHtml(formatDate(eventItem.createdAt))}</td>
+            <td>${escapeHtml(eventItem.entity || '-')}</td>
+            <td>${escapeHtml(eventItem.action || '-')}</td>
+            <td>${escapeHtml(eventItem.summary || '-')}</td>
+          </tr>
+        `).join('')
+        : '<tr><td colspan="4" class="muted">No hay eventos auditados para este afiliado.</td></tr>';
+
+      document.getElementById('timelineCount').textContent = `${timeline.length} eventos`;
+      document.getElementById('timelineList').innerHTML = timeline.length
+        ? timeline.map((item) => {
+          const actorText = item.actor?.email || item.actor?.username || item.actor?.nuusuid || null;
+          const extraParts = [];
+          if (item.entity) extraParts.push(`Entidad: ${item.entity}`);
+          if (item.action) extraParts.push(`Acción: ${item.action}`);
+          if (actorText) extraParts.push(`Actor: ${actorText}`);
+          if (item.data?.request?.ip) extraParts.push(`IP: ${item.data.request.ip}`);
+          if (item.data?.deviceId) extraParts.push(`Device: ${item.data.deviceId}`);
+
+          const compactData = item.source === 'audit'
+            ? { before: item.data?.before || null, after: item.data?.after || null, meta: item.data?.meta || null }
+            : item.data;
+
+          return `
+            <article class="timeline-item ${escapeHtml(item.source)}">
+              <div class="timeline-top">
+                <div>
+                  <div class="timeline-title">${escapeHtml(item.title || 'Evento')}</div>
+                  <div class="timeline-summary">${escapeHtml(item.summary || 'Sin resumen adicional')}</div>
+                </div>
+                <div class="timeline-meta">
+                  <div><strong>${escapeHtml(formatDate(item.when))}</strong></div>
+                  <div>${escapeHtml(item.source === 'audit' ? 'Auditoría' : 'Sesión')}</div>
+                </div>
+              </div>
+              <div class="timeline-extra">${extraParts.map((part) => `<span>${escapeHtml(part)}</span>`).join('')}</div>
+              <details>
+                <summary class="muted timeline-detail-toggle">Ver detalle</summary>
+                <pre class="timeline-json">${escapeHtml(JSON.stringify(compactData, null, 2))}</pre>
+              </details>
+            </article>
+          `;
+        }).join('')
+        : '<div class="muted">No hay eventos para mostrar.</div>';
+
+      document.getElementById('resultsGrid').style.display = 'grid';
+    }
+
+    function logout() {
+      authToken = null;
+      AdminSession.clear();
+      document.getElementById('appScreen').style.display = 'none';
+      document.getElementById('loginScreen').style.display = 'block';
+      document.getElementById('password').value = '';
+      document.getElementById('summaryGrid').style.display = 'none';
+      document.getElementById('resultsGrid').style.display = 'none';
+      hideError();
+      hideError('loginError');
+    }
+  </script>
+</body>
+</html>

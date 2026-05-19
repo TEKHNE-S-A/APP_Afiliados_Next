@@ -1,0 +1,615 @@
+{
+  "info": {
+    "_postman_id": "aaf10001-ws-app-afiliados-2026",
+    "name": "APP Afiliados - WS Externos (GeneXus)",
+    "description": "Colección completa para los 5 endpoints WS invocados desde GeneXus/SIA.\nAuth: Basic (admin@test.local / admin123) — heredada por todos los requests.\nVariables de entorno requeridas: baseUrl, adminUser, adminPass, realCrCreId, realNroAfiliado, realNusuafili.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      { "key": "username", "value": "{{adminUser}}", "type": "string" },
+      { "key": "password", "value": "{{adminPass}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl",          "value": "http://localhost:3000" },
+    { "key": "adminUser",        "value": "admin@test.local" },
+    { "key": "adminPass",        "value": "admin123" },
+    { "key": "realCrCreId",      "value": "000005239000000000001000163428" },
+    { "key": "realNroAfiliado",  "value": "01-075043-01" },
+    { "key": "realWsUsuario",    "value": "marianr@tekhne.com.ar" },
+    { "key": "realWsPassword",   "value": "123456" },
+    { "key": "realNusuafili",    "value": "000000072000000000001000000072" }
+  ],
+  "item": [
+
+    {
+      "name": "WS_NOTIFICACION",
+      "description": "Envía notificaciones push a uno o más afiliados. SDT: Titulo, Mensaje, NUMesId, Afiliados[].",
+      "item": [
+        {
+          "name": "GET → 405 Method Not Allowed",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_NOTIFICACION", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_NOTIFICACION"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test('Status 405', () => pm.response.to.have.status(405));",
+              "pm.test('Allow: POST', () => pm.expect(pm.response.headers.get('Allow')).to.include('POST'));"
+            ]}
+          }]
+        },
+        {
+          "name": "POST - Notificacion a un afiliado",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Titulo\": \"Recordatorio de turno\",\n  \"Mensaje\": \"Tiene un turno programado para mañana a las 10:00 hs.\",\n  \"NUMesId\": 1001,\n  \"Afiliados\": [\n    {\n      \"NUUsuAfiliadoID\": \"{{realCrCreId}}\",\n      \"NUUsuNroAfiliado\": \"{{realNroAfiliado}}\"\n    }\n  ]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_NOTIFICACION", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_NOTIFICACION"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Tiene Messages', () => pm.expect(json).to.have.property('Messages'));",
+              "pm.test('Messages es array', () => pm.expect(json.Messages).to.be.an('array'));"
+            ]}
+          }]
+        },
+        {
+          "name": "POST - Multiples afiliados",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Titulo\": \"Aviso importante\",\n  \"Mensaje\": \"Actualización de cobertura disponible en la app.\",\n  \"NUMesId\": 1002,\n  \"Afiliados\": [\n    { \"NUUsuAfiliadoID\": \"{{realCrCreId}}\", \"NUUsuNroAfiliado\": \"{{realNroAfiliado}}\" },\n    { \"NUUsuAfiliadoID\": \"OTRO_ID_AFILIADO\", \"NUUsuNroAfiliado\": \"99-000000-00\" }\n  ]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_NOTIFICACION", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_NOTIFICACION"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Messages array', () => pm.expect(json.Messages).to.be.an('array'));"
+            ]}
+          }]
+        },
+        {
+          "name": "POST - Sin Titulo ni Mensaje (validación)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_NOTIFICACION", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_NOTIFICACION"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test('Status 400', () => pm.response.to.have.status(400));"
+            ]}
+          }]
+        },
+        {
+          "name": "POST - Sin Auth → 401",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"Titulo\": \"Test\", \"Mensaje\": \"Test\", \"Afiliados\": [] }" },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_NOTIFICACION", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_NOTIFICACION"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"] }
+          }]
+        },
+        {
+          "name": "POST - Respuesta YAML (Accept: application/yaml)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/yaml" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Titulo\": \"Test YAML\",\n  \"Mensaje\": \"Respuesta en formato YAML\",\n  \"Afiliados\": []\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_NOTIFICACION", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_NOTIFICACION"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test('Content-Type YAML', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('yaml'));",
+              "pm.test('Body contiene Messages', () => pm.expect(pm.response.text()).to.include('Messages'));"
+            ]}
+          }]
+        }
+      ]
+    },
+
+    {
+      "name": "WS_USUARIO_ACTIVO",
+      "description": "Autentica vía GAM OAuth2. SDT entrada: WSUsuario (email GAM, max 40), WSPassword (max 50), IdAfiliado (opcional, max 40). SDT salida: Respuesta[] con RespuestaCodigo/RespuestaDescripcion. Códigos: 000=OK, 50=Bloqueado, 51/52=Inactivo, 53=afiliado mismatch, 54=usuario no en BD, 010=params, 099=interno.",
+      "item": [
+        {
+          "name": "GET → 405 Method Not Allowed",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_USUARIO_ACTIVO", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_USUARIO_ACTIVO"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 405', () => pm.response.to.have.status(405));"] } }]
+        },
+        {
+          "name": "POST - Login GAM correcto, IdAfiliado vacío → 000",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"WSUsuario\": \"{{realWsUsuario}}\",\n  \"WSPassword\": \"{{realWsPassword}}\",\n  \"IdAfiliado\": \"\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_USUARIO_ACTIVO", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_USUARIO_ACTIVO"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Respuesta es array', () => pm.expect(json.Respuesta).to.be.an('array'));",
+              "pm.test('Respuesta tiene items', () => pm.expect(json.Respuesta.length).to.be.above(0));",
+              "pm.test('Codigo 000 OK', () => pm.expect(json.Respuesta[0].RespuestaCodigo).to.eql('000'));"
+            ]}
+          }]
+        },
+        {
+          "name": "POST - Login GAM correcto, IdAfiliado correcto → 000",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"WSUsuario\": \"{{realWsUsuario}}\",\n  \"WSPassword\": \"{{realWsPassword}}\",\n  \"IdAfiliado\": \"{{realNroAfiliado}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_USUARIO_ACTIVO", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_USUARIO_ACTIVO"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Respuesta es array', () => pm.expect(pm.response.json().Respuesta).to.be.an('array'));",
+            "pm.test('Codigo 000 OK', () => pm.expect(pm.response.json().Respuesta[0].RespuestaCodigo).to.eql('000'));"
+          ]}}]
+        },
+        {
+          "name": "POST - Credenciales GAM incorrectas → error GAM (no 000)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"WSUsuario\": \"{{realWsUsuario}}\",\n  \"WSPassword\": \"WRONGPASSWORD_XYZ\",\n  \"IdAfiliado\": \"\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_USUARIO_ACTIVO", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_USUARIO_ACTIVO"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const code = pm.response.json().Respuesta[0].RespuestaCodigo;",
+            "pm.test('Respuesta es array', () => pm.expect(pm.response.json().Respuesta).to.be.an('array'));",
+            "pm.test('Codigo NO es 000 (GAM rechazó credenciales)', () => pm.expect(code).to.not.eql('000'));"
+          ]}}]
+        },
+        {
+          "name": "POST - Login OK, IdAfiliado no coincide → 53",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"WSUsuario\": \"{{realWsUsuario}}\",\n  \"WSPassword\": \"{{realWsPassword}}\",\n  \"IdAfiliado\": \"000000000000000000000000000000\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_USUARIO_ACTIVO", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_USUARIO_ACTIVO"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Codigo 53 (afiliado no asociado)', () => pm.expect(pm.response.json().Respuesta[0].RespuestaCodigo).to.eql('53'));"
+          ]}}]
+        },
+        {
+          "name": "POST - Campos vacíos → 010 (error validación)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"WSUsuario\": \"\",\n  \"WSPassword\": \"\",\n  \"IdAfiliado\": \"\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_USUARIO_ACTIVO", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_USUARIO_ACTIVO"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Codigo 010 (param error)', () => pm.expect(pm.response.json().Respuesta[0].RespuestaCodigo).to.eql('010'));"
+          ]}}]
+        },
+        {
+          "name": "POST - Sin Auth → 401",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"WSUsuario\": \"a\", \"WSPassword\": \"b\" }" },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_USUARIO_ACTIVO", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_USUARIO_ACTIVO"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"] } }]
+        }
+      ]
+    },
+
+    {
+      "name": "WS_VALIDAR_AFILIADO",
+      "description": "Estado de afiliado por NUUsuAfiliadoID (= nuusuafili). Lógica GeneXus: nuusuari WHERE nuusuafili=? AND bajaf IS NULL, luego GAMUser.Load(GUID). EstadoAfiliado: E=Existente (BD+GAM activo), I=Inexistente (default/no encontrado/baja/GAM inactivo), D=Inactivo/Deshabilitado. Sin 'N' ni 'A'.",
+      "item": [
+        {
+          "name": "GET → 405 Method Not Allowed",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_VALIDAR_AFILIADO", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_VALIDAR_AFILIADO"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 405', () => pm.response.to.have.status(405));"] } }]
+        },
+        {
+          "name": "POST - nuusuafili real → E (existente en BD + GAM activo)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"NUUsuAfiliadoID\": \"{{realNusuafili}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_VALIDAR_AFILIADO", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_VALIDAR_AFILIADO"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('NUUsuAfiliadoID en respuesta', () => pm.expect(json).to.have.property('NUUsuAfiliadoID'));",
+              "pm.test('EstadoAfiliado presente', () => pm.expect(json).to.have.property('EstadoAfiliado'));",
+              "pm.test('Estado E, I o D (nunca N ni A)', () => pm.expect(['E','I','D']).to.include(json.EstadoAfiliado));",
+              "pm.collectionVariables.set('ultimoEstadoAfiliado', json.EstadoAfiliado);"
+            ]}
+          }]
+        },
+        {
+          "name": "POST - nuusuafili inexistente → I (Inexistente)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"NUUsuAfiliadoID\": \"999999999999999999999999999999\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_VALIDAR_AFILIADO", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_VALIDAR_AFILIADO"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('EstadoAfiliado I (Inexistente — no encontrado)', () => pm.expect(pm.response.json().EstadoAfiliado).to.eql('I'));"
+          ]}}]
+        },
+        {
+          "name": "POST - Campo vacío → I + HTTP 400",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"NUUsuAfiliadoID\": \"\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_VALIDAR_AFILIADO", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_VALIDAR_AFILIADO"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('EstadoAfiliado I (Inexistente en error validación)', () => pm.expect(pm.response.json().EstadoAfiliado).to.eql('I'));"
+          ]}}]
+        },
+        {
+          "name": "POST - Campo > 40 chars → I + HTTP 400",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"NUUsuAfiliadoID\": \"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_VALIDAR_AFILIADO", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_VALIDAR_AFILIADO"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('EstadoAfiliado I', () => pm.expect(pm.response.json().EstadoAfiliado).to.eql('I'));"
+          ]}}]
+        },
+        {
+          "name": "POST - Sin Auth → 401",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"NUUsuAfiliadoID\": \"test\" }" },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_VALIDAR_AFILIADO", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_VALIDAR_AFILIADO"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"] } }]
+        }
+      ]
+    },
+
+    {
+      "name": "WS_TOKEN_TELECONSULTA",
+      "description": "Genera o devuelve (cache) un token de 6 caracteres para teleconsulta. SDT entrada: NroAfiliado (varchar 20). SDT salida: token (char 6), fechaHora (ISO 8601). Cache TTL configurable vía nusispar CREDENCIAL.TIMEOUTTOKENTELE (default 30 min).",
+      "item": [
+        {
+          "name": "GET → 405 Method Not Allowed",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_TOKEN_TELECONSULTA", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_TOKEN_TELECONSULTA"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 405', () => pm.response.to.have.status(405));"] } }]
+        },
+        {
+          "name": "POST - NroAfiliado real → token 6 chars",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"NroAfiliado\": \"{{realNroAfiliado}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_TOKEN_TELECONSULTA", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_TOKEN_TELECONSULTA"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('token presente', () => pm.expect(json).to.have.property('token'));",
+              "pm.test('fechaHora presente', () => pm.expect(json).to.have.property('fechaHora'));",
+              "pm.test('token tiene 6 caracteres', () => pm.expect(json.token).to.have.lengthOf(6));",
+              "pm.test('token charset valido (sin O,0,I,1)', () => pm.expect(json.token).to.match(/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/));",
+              "pm.test('fechaHora es ISO 8601', () => pm.expect(json.fechaHora).to.match(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}/));",
+              "pm.collectionVariables.set('tokenTeleconsulta', json.token);",
+              "pm.collectionVariables.set('tokenFechaHora', json.fechaHora);"
+            ]}
+          }]
+        },
+        {
+          "name": "POST - Segunda llamada (mismo NroAfiliado) → mismo token (cache)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"NroAfiliado\": \"{{realNroAfiliado}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_TOKEN_TELECONSULTA", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_TOKEN_TELECONSULTA"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "const tokenAnterior = pm.collectionVariables.get('tokenTeleconsulta');",
+              "pm.test('Token en cache (igual al anterior)', () => pm.expect(json.token).to.eql(tokenAnterior));",
+              "pm.test('fechaHora igual (mismo timestamp)', () => pm.expect(json.fechaHora).to.eql(pm.collectionVariables.get('tokenFechaHora')));"
+            ]}
+          }]
+        },
+        {
+          "name": "POST - NroAfiliado inexistente → 404",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"NroAfiliado\": \"00-000000-00\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_TOKEN_TELECONSULTA", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_TOKEN_TELECONSULTA"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 404', () => pm.response.to.have.status(404));",
+            "pm.test('Error VALIDATION_ERROR', () => pm.expect(pm.response.json().error).to.eql('VALIDATION_ERROR'));"
+          ]}}]
+        },
+        {
+          "name": "POST - Campo vacío → 400",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"NroAfiliado\": \"\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_TOKEN_TELECONSULTA", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_TOKEN_TELECONSULTA"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 400', () => pm.response.to.have.status(400));"] } }]
+        },
+        {
+          "name": "POST - NroAfiliado > 20 chars → 400",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"NroAfiliado\": \"012345678901234567890\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_TOKEN_TELECONSULTA", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_TOKEN_TELECONSULTA"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 400', () => pm.response.to.have.status(400));"] } }]
+        },
+        {
+          "name": "POST - Sin Auth → 401",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"NroAfiliado\": \"test\" }" },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_TOKEN_TELECONSULTA", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_TOKEN_TELECONSULTA"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"] } }]
+        }
+      ]
+    },
+
+    {
+      "name": "WS_AUTORIZACION",
+      "description": "Callback de GeneXus/SIA: recibe resultado de autorización y lo persiste en sia_autorizaciones (UPSERT por AUSolIdExt).\nd_AUSolEstado: ENV=Enviado | AUD=Auditoria | AUT=Autorizado | REC=Rechazado | PEN=Pendiente | CON=Consumido\nRegla AUSolAutNumero: solo se formatea cuando estado≠CON AND (AUT o AUD) AND autNumero no vacío:\n  AUSolAutDCodigo.PadLeft(5,'0') + '-' + AUSolAutNumero.PadLeft(12,'0')\nEn cualquier otro caso el valor existente se preserva (SetEmpty comentado en GeneXus).\nSDT entrada: SDT_AUSolic_WS (17 campos). SDT salida: Messages[].",
+      "item": [
+        {
+          "name": "GET → 405 Method Not Allowed",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_AUTORIZACION", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_AUTORIZACION"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 405', () => pm.response.to.have.status(405));"] } }]
+        },
+        {
+          "name": "POST - estado=AUT + autNumero → SUCCESS (formateado)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"AUSolIdExt\": \"AUTREF001\",\n  \"AUSolEstado\": \"AUT\",\n  \"AUSolAutDCodigo\": 10101,\n  \"AUSolAutNumero\": 202600001234,\n  \"AUSolAutCodGra\": 1,\n  \"AUSolAutMar\": \"OK\",\n  \"AUSolAudMar\": \"A01\",\n  \"AUSolAutEstado\": \"AUTORIZADO\",\n  \"AUSolFecVto\": \"2026-12-31\",\n  \"AUSolRechazoDef\": \"N\",\n  \"AUSolAutNroAfiliado\": \"{{realNroAfiliado}}\",\n  \"AUSolAutNomAfi\": \"PEREZ, JUAN CARLOS\",\n  \"AUSolAutProv\": 12345,\n  \"AUSolAutRazPro\": \"CENTRO MEDICO SA\",\n  \"AUSolAutSuc\": 1,\n  \"AUSolEntidadId\": \"ENT001\",\n  \"AUSolTexto\": \"Autorización aprobada para consulta médica.\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_AUTORIZACION", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_AUTORIZACION"] }
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Messages array', () => pm.expect(json.Messages).to.be.an('array').with.lengthOf(1));",
+              "pm.test('Type SUCCESS', () => pm.expect(json.Messages[0].Type).to.eql('SUCCESS'));",
+              "pm.test('Id WS_AUTORIZACION_OK', () => pm.expect(json.Messages[0].Id).to.eql('WS_AUTORIZACION_OK'));",
+              "// AUSolAutNumero formateado: 10101 → '10101', 202600001234 → '202600001234' → '10101-202600001234'",
+              "pm.test('Description confirma persistencia', () => pm.expect(json.Messages[0].Description).to.be.a('string').and.not.empty);"
+            ]}
+          }]
+        },
+        {
+          "name": "POST - estado=AUD + autNumero pequeño → SUCCESS (formateado 00005-000000000123)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"AUSolIdExt\": \"AUDREF001\",\n  \"AUSolEstado\": \"AUD\",\n  \"AUSolAutDCodigo\": 5,\n  \"AUSolAutNumero\": 123,\n  \"AUSolFecVto\": \"2026-06-30\",\n  \"AUSolRechazoDef\": \"N\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_AUTORIZACION", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_AUTORIZACION"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Type SUCCESS (AUD también formatea autNumero)', () => pm.expect(pm.response.json().Messages[0].Type).to.eql('SUCCESS'));"
+          ]}}]
+        },
+        {
+          "name": "POST - estado=CON → SUCCESS (AUSolAutNumero NO se sobreescribe)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"AUSolIdExt\": \"AUDREF001\",\n  \"AUSolEstado\": \"CON\",\n  \"AUSolAutDCodigo\": 99999,\n  \"AUSolAutNumero\": 999999999999,\n  \"AUSolFecVto\": \"2026-06-30\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_AUTORIZACION", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_AUTORIZACION"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Type SUCCESS (CON preserva autNumero existente)', () => pm.expect(pm.response.json().Messages[0].Type).to.eql('SUCCESS'));"
+          ]}}]
+        },
+        {
+          "name": "POST - estado=REC + rechazoDef=S → SUCCESS",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"AUSolIdExt\": \"RECREF001\",\n  \"AUSolEstado\": \"REC\",\n  \"AUSolRechazoDef\": \"S\",\n  \"AUSolTexto\": \"Rechazado por falta de documentación.\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_AUTORIZACION", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_AUTORIZACION"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Type SUCCESS (rechazo persistido)', () => pm.expect(pm.response.json().Messages[0].Type).to.eql('SUCCESS'));"
+          ]}}]
+        },
+        {
+          "name": "POST - Payload mínimo (solo AUSolIdExt) → SUCCESS",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"AUSolIdExt\": \"MINREF-{{$randomInt}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_AUTORIZACION", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_AUTORIZACION"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Type SUCCESS', () => pm.expect(pm.response.json().Messages[0].Type).to.eql('SUCCESS'));"
+          ]}}]
+        },
+        {
+          "name": "POST - UPSERT: reenvío mismo AUSolIdExt → SUCCESS (idempotente)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"AUSolIdExt\": \"AUTREF001\",\n  \"AUSolEstado\": \"AUT\",\n  \"AUSolAutDCodigo\": 10101,\n  \"AUSolAutNumero\": 202600001234,\n  \"AUSolRechazoDef\": \"N\",\n  \"AUSolTexto\": \"Segundo envío — UPSERT idempotente.\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_AUTORIZACION", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_AUTORIZACION"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200 (idempotente)', () => pm.response.to.have.status(200));",
+            "pm.test('Type SUCCESS en reenvío', () => pm.expect(pm.response.json().Messages[0].Type).to.eql('SUCCESS'));"
+          ]}}]
+        },
+        {
+          "name": "POST - Sin AUSolIdExt → 400 ERROR",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"AUSolEstado\": \"AUT\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_AUTORIZACION", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_AUTORIZACION"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Type ERROR', () => pm.expect(pm.response.json().Messages[0].Type).to.eql('ERROR'));"
+          ]}}]
+        },
+        {
+          "name": "POST - AUSolRechazoDef inválido (no S/N) → 400",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"AUSolIdExt\": \"VALREF001\",\n  \"AUSolRechazoDef\": \"X\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_AUTORIZACION", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_AUTORIZACION"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Type ERROR en Messages', () => pm.expect(pm.response.json().Messages[0].Type).to.eql('ERROR'));"
+          ]}}]
+        },
+        {
+          "name": "POST - AUSolEstado > 3 chars → 400",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"AUSolIdExt\": \"VALREF002\",\n  \"AUSolEstado\": \"TOOLONG\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_AUTORIZACION", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_AUTORIZACION"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+            "pm.test('Type ERROR', () => pm.expect(pm.response.json().Messages[0].Type).to.eql('ERROR'));"
+          ]}}]
+        },
+        {
+          "name": "POST - Respuesta YAML (Accept: application/yaml)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/yaml" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"AUSolIdExt\": \"YAMLREF001\",\n  \"AUSolEstado\": \"ENV\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_AUTORIZACION", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_AUTORIZACION"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Content-Type YAML', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('yaml'));",
+            "pm.test('Body contiene Messages', () => pm.expect(pm.response.text()).to.include('Messages'));"
+          ]}}]
+        },
+        {
+          "name": "POST - Sin Auth → 401",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"AUSolIdExt\": \"test\" }" },
+            "url": { "raw": "{{baseUrl}}/api/ws/WS_AUTORIZACION", "host": ["{{baseUrl}}"], "path": ["api","ws","WS_AUTORIZACION"] }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"] } }]
+        }
+      ]
+    }
+
+  ]
+}

@@ -1,0 +1,11 @@
+.env
+.env.local
+.env.*.local
+node_modules/
+.next/
+out/
+dist/
+*.log
+.DS_Store
+prototipo/node_modules/
+mobile/node_modules/

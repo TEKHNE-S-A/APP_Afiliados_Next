@@ -1,0 +1,13 @@
+{
+  "beneficiariesEndpoint": "http://tkosep.tekhne.com.ar:8080/OSEP_BENEF17_PREPROU4JavaWebPostgreSQL/com.tekhne.abe_ws?wsdl",
+  "siaEndpoint": "http://tkqa.tekhne.com.ar:8700/PRODUCTO_SIA_QA/com.tekhne.asia_ws?wsdl",
+  "gamEndpoint": "http://localhost:8081/PRODUCTO_APP_SHEMA_DESA1JavaEnvironment/oauth/access_token",
+  "TimeoutTokenCredencial": 10,
+  "gam": {
+    "baseUrl": "http://localhost:8081/PRODUCTO_APP_SHEMA_DESA1JavaEnvironment",
+    "clientId": "18YSf8rjd99grJBtMOn7yvionXhQk9yRPl1DeLbO",
+    "clientSecret": "MG6Ydy7OLAVfg0NSCnKquuEKMcu7FKDNlxAccmP4jBIqACIoIcgx16efRpqAmQhEAiNWXZT8HQVS3CS8",
+    "timeout": 30000,
+    "enabled": true
+  }
+}

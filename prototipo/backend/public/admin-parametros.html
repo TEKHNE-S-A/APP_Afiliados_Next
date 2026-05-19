@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administración de Parámetros - Backend</title>
+  <link rel="stylesheet" href="/admin-shared.css" />
+  <script src="/admin-nav.js"></script>
+  <script src="/admin-shared.js"></script>
+  <style>
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    /* Main App */
+    .app-container {
+      display: none;
+    }
+    .controls {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .controls-row {
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .stat-card h3 {
+      color: #666;
+      font-size: 13px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+    .stat-card .value {
+      color: #333;
+      font-size: 32px;
+      font-weight: 700;
+    }
+    .modal-content {
+      max-width: 500px;
+      width: 90%;
+    }
+    .success-message {
+      background: #d4edda;
+      color: #155724;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      border-left: 4px solid #28a745;
+    }
+    .hidden { display: none; }
+    .value-sm { font-size: 16px; }
+    .modal-actions-inline { display: flex; gap: 10px; }
+    .btn-modal-cancel { background: #95a5a6; }
+    .loading-error { color: #e74c3c; }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+  <!-- Login Screen -->
+  <div class="login-container" id="loginScreen">
+    <h1>🔐 Administración</h1>
+    <p>Gestión de Parámetros del Sistema</p>
+    <div id="loginError" class="error hidden"></div>
+    <form id="loginForm">
+      <div class="form-group">
+        <label>Usuario</label>
+        <input type="text" id="username" required autocomplete="username" placeholder="Email de administrador">
+      </div>
+      <div class="form-group">
+        <label>Contraseña</label>
+        <input type="password" id="password" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn" id="btnLogin">Iniciar Sesión</button>
+    </form>
+  </div>
+
+  <!-- Main App -->
+  <div class="app-container" id="appContainer">
+    <div class="container">
+      <header>
+        <div>
+          <h1>⚙️ Administración de Parámetros</h1>
+          <p class="header-subtitle">Configuración central del backend</p>
+        </div>
+        <nav aria-label="Navegación principal" class="nav-links">
+          <a href="/">🏠 Inicio</a>
+          <a href="/admin/usuarios">👥 Usuarios</a>
+          <a href="/admin">⚙️ Parámetros</a>
+          <a href="/admin/credenciales">🎨 Credenciales</a>
+          <a href="/admin/planes-ui">📋 Planes</a>
+          <a href="/admin/noticias">📣 Noticias</a>
+          <a href="/admin/cartilla">🗺️ Cartilla</a>
+          <a href="/admin/info-util-ui">📌 Info útil</a>
+          <a href="/admin/diagnostico">🌐 Diagnóstico</a>
+          <a href="/admin/soporte">🧾 Soporte</a>
+          <a href="/admin/notificaciones">📣 Notificaciones</a>
+          <a href="/admin/analytics">📊 Analítica</a>
+          <a href="/admin/historial-atencion">📜 Historial</a>
+        </nav>
+        <div class="user-info">
+          <span id="usernameDisplay"></span>
+          <button class="btn btn-danger btn-sm" onclick="logout()">Cerrar sesión</button>
+        </div>
+      </header>
+      <nav id="adminBreadcrumb" class="admin-breadcrumb" aria-label="Migas de pan"></nav>
+
+      <main id="main-content">
+      <!-- Stats -->
+      <div class="stats">
+        <div class="stat-card">
+          <h3>Total Parámetros</h3>
+          <div class="value" id="totalParams">0</div>
+        </div>
+        <div class="stat-card">
+          <h3>Grupos Únicos</h3>
+          <div class="value" id="totalGrupos">0</div>
+        </div>
+        <div class="stat-card">
+          <h3>Última Actualización</h3>
+          <div class="value value-sm" id="lastUpdate">--:--</div>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="controls">
+        <div class="controls-row">
+          <div class="control-group">
+            <label>🔍 Buscar</label>
+            <input type="text" id="searchInput" placeholder="Buscar por grupo, tipo o valor...">
+          </div>
+          <div class="control-group">
+            <label>📁 Filtrar por Grupo</label>
+            <select id="filterGrupo">
+              <option value="">Todos los grupos</option>
+            </select>
+          </div>
+          <div class="control-group control-group-actions">
+            <button class="btn btn-success" onclick="showCreateModal(this)">➕ Crear Nuevo Parámetro</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-container">
+        <div id="loadingIndicator" class="loading">
+          <div class="spinner"></div>
+          <p>Cargando parámetros...</p>
+        </div>
+        <table id="paramsTable" class="hidden">
+          <thead>
+            <tr>
+              <th scope="col">Grupo</th>
+              <th scope="col">Tipo</th>
+              <th scope="col">Valor</th>
+              <th scope="col" class="cell-actions">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+          </tbody>
+        </table>
+        <div id="emptyState" class="empty-state hidden">
+          <p>No se encontraron parámetros</p>
+        </div>
+      </main>
+      <footer role="contentinfo">
+        <p class="admin-footer-text">Admin OSEP &nbsp;&middot;&nbsp; Sistema de Gestión</p>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Modal Crear/Editar -->
+  <div class="modal" id="editModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" tabindex="-1">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">Editar Parámetro</h2>
+        <button class="btn-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div id="modalSuccess" class="success-message hidden"></div>
+      <div id="modalError" class="error hidden"></div>
+      <form id="editForm">
+        <div class="form-group">
+          <label>Grupo</label>
+          <input type="text" id="editGrupo" required>
+        </div>
+        <div class="form-group">
+          <label>Tipo</label>
+          <input type="text" id="editTipo" required>
+        </div>
+        <div class="form-group">
+          <label>Valor</label>
+          <input type="text" id="editValor" required>
+        </div>
+        <div class="modal-actions-inline">
+          <button type="submit" class="btn">Guardar</button>
+          <button type="button" class="btn btn-modal-cancel" onclick="closeModal()">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let authToken = null;
+    let currentUser = null;
+
+    // ── Auto-login si hay sesión guardada ─────────────────────────────────
+    initAdminPanelAuth({
+      loginId: 'loginScreen',
+      appId: 'appContainer',
+      userInfoId: 'usernameDisplay',
+      onReady(token, user) {
+        authToken = token;
+        currentUser = user;
+        loadParameters();
+      }
+    });
+    let allParams = [];
+    let isEditMode = false;
+    let originalGrupo = null;
+    let originalTipo = null;
+
+    // Login
+    adminBindLoginForm({
+      formId: 'loginForm',
+      usernameId: 'username',
+      passwordId: 'password',
+      errorId: 'loginError',
+      buttonId: 'btnLogin',
+      loginId: 'loginScreen',
+      appId: 'appContainer',
+      userInfoId: 'usernameDisplay',
+      formatUserLabel: (user) => `👤 ${user}`,
+      onSuccess: async (token, user) => {
+        authToken = token;
+        currentUser = user;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const returnUrl = urlParams.get('returnUrl');
+        if (returnUrl) {
+          window.location.href = returnUrl;
+          return;
+        }
+
+        loadParameters();
+      }
+    });
+
+    // Logout
+    function logout() {
+      authToken = null;
+      currentUser = null;
+      adminLogout('/admin');
+    }
+
+    // Load Parameters
+    async function loadParameters() {
+      const loading = document.getElementById('loadingIndicator');
+      const table = document.getElementById('paramsTable');
+      const emptyState = document.getElementById('emptyState');
+
+      loading.style.display = 'block';
+      table.classList.add('hidden');
+      emptyState.classList.add('hidden');
+
+      try {
+        const data = await adminAuthFetch('/admin/parametros');
+        allParams = data.parametros;
+
+        updateStats();
+        updateGroupFilter();
+        renderTable();
+
+        loading.style.display = 'none';
+        if (allParams.length > 0) {
+          table.classList.remove('hidden');
+        } else {
+          emptyState.classList.remove('hidden');
+        }
+      } catch (error) {
+        loading.style.display = 'none';
+        table.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        emptyState.innerHTML = `<p class="loading-error">Error: ${error.message}</p>`;
+        showToast('No se pudieron cargar los parámetros', 'error');
+      }
+    }
+
+    // Update Stats
+    function updateStats() {
+      const grupos = [...new Set(allParams.map(p => p.nusisgrupa))];
+      document.getElementById('totalParams').textContent = allParams.length;
+      document.getElementById('totalGrupos').textContent = grupos.length;
+      document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('es-AR');
+    }
+
+    // Update Group Filter
+    function updateGroupFilter() {
+      const grupos = [...new Set(allParams.map(p => p.nusisgrupa))].sort();
+      const select = document.getElementById('filterGrupo');
+      select.innerHTML = '<option value="">Todos los grupos</option>';
+      grupos.forEach(grupo => {
+        const option = document.createElement('option');
+        option.value = grupo;
+        option.textContent = grupo;
+        select.appendChild(option);
+      });
+    }
+
+    // Render Table
+    function renderTable() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      const filterGrupo = document.getElementById('filterGrupo').value;
+
+      let filtered = allParams.filter(p => {
+        const matchSearch = !searchTerm || 
+          p.nusisgrupa.toLowerCase().includes(searchTerm) ||
+          p.nusistippa.toLowerCase().includes(searchTerm) ||
+          (p.nusisvalpa && p.nusisvalpa.toLowerCase().includes(searchTerm));
+        
+        const matchGrupo = !filterGrupo || p.nusisgrupa === filterGrupo;
+
+        return matchSearch && matchGrupo;
+      });
+
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = '';
+
+      filtered.forEach(param => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><span class="admin-chip admin-chip--group">${param.nusisgrupa}</span></td>
+          <td><strong>${param.nusistippa}</strong></td>
+          <td>${param.nusisvalpa || '<em>vacío</em>'}</td>
+          <td class="cell-actions">
+            <div class="action-buttons">
+              <button class="btn btn-sm btn-secondary" onclick="editParameter('${param.nusisgrupa}', '${param.nusistippa}', this)">✏️ Editar</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteParameter('${param.nusisgrupa}', '${param.nusistippa}')">🗑️ Eliminar</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      const table = document.getElementById('paramsTable');
+      const emptyState = document.getElementById('emptyState');
+      if (filtered.length > 0) {
+        table.classList.remove('hidden');
+        emptyState.classList.add('hidden');
+      } else {
+        table.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+      }
+    }
+
+    // Show Create Modal
+    function showCreateModal(triggerEl) {
+      isEditMode = false;
+      originalGrupo = null;
+      originalTipo = null;
+
+      document.getElementById('modalTitle').textContent = '➕ Crear Nuevo Parámetro';
+      document.getElementById('editGrupo').value = '';
+      document.getElementById('editTipo').value = '';
+      document.getElementById('editValor').value = '';
+      document.getElementById('editGrupo').readOnly = false;
+      document.getElementById('editTipo').readOnly = false;
+      document.getElementById('modalSuccess').style.display = 'none';
+      document.getElementById('modalError').style.display = 'none';
+
+      const modal = document.getElementById('editModal');
+      adminOpenModal(modal, triggerEl, 'show');
+    }
+
+    // Edit Parameter
+    async function editParameter(grupo, tipo, triggerEl) {
+      isEditMode = true;
+      originalGrupo = grupo;
+      originalTipo = tipo;
+
+      // Usar listado solo para mostrar grupo/tipo; el valor real se obtiene por endpoint de detalle
+      const param = allParams.find(p => p.nusisgrupa === grupo && p.nusistippa === tipo);
+      if (!param) return;
+
+      document.getElementById('modalTitle').textContent = '✏️ Editar Parámetro';
+      document.getElementById('editGrupo').value = param.nusisgrupa;
+      document.getElementById('editTipo').value = param.nusistippa;
+      document.getElementById('editValor').value = 'Cargando...';
+      document.getElementById('editGrupo').readOnly = true;
+      document.getElementById('editTipo').readOnly = true;
+      document.getElementById('modalSuccess').style.display = 'none';
+      document.getElementById('modalError').style.display = 'none';
+
+      const modal = document.getElementById('editModal');
+      adminOpenModal(modal, triggerEl, 'show');
+
+      try {
+        const data = await adminAuthFetch(`/admin/parametros/${encodeURIComponent(grupo)}/${encodeURIComponent(tipo)}`);
+        const real = data.parametro;
+        document.getElementById('editValor').value = (real && real.nusisvalpa) ? real.nusisvalpa : '';
+      } catch (error) {
+        document.getElementById('editValor').value = '';
+        const errorDiv = document.getElementById('modalError');
+        errorDiv.textContent = error.message;
+        errorDiv.style.display = 'block';
+      }
+    }
+
+    // Delete Parameter
+    async function deleteParameter(grupo, tipo) {
+      const isConfirmed = await adminConfirm(
+        `¿Eliminar el parámetro ${grupo}.${tipo}?`,
+        {
+          title: 'Eliminar parámetro',
+          confirmText: 'Eliminar',
+          confirmClass: 'btn-danger'
+        }
+      );
+      if (!isConfirmed) return;
+
+      try {
+        await adminAuthFetch(`/admin/parametros/${encodeURIComponent(grupo)}/${encodeURIComponent(tipo)}`, {
+          method: 'DELETE'
+        });
+
+        await loadParameters();
+        showToast(`Parámetro ${grupo}.${tipo} eliminado`, 'success');
+      } catch (error) {
+        showToast('Error: ' + error.message, 'error');
+      }
+    }
+
+    // Close Modal
+    function closeModal() {
+      const modal = document.getElementById('editModal');
+      adminCloseModal(modal, 'show');
+    }
+
+    // Close modal on outside click
+    document.getElementById('editModal').addEventListener('click', (e) => {
+      if (e.target.id === 'editModal') {
+        closeModal();
+      }
+    });
+
+    // Save Parameter
+    document.getElementById('editForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const grupo = document.getElementById('editGrupo').value;
+      const tipo = document.getElementById('editTipo').value;
+      const valor = document.getElementById('editValor').value;
+
+      const successDiv = document.getElementById('modalSuccess');
+      const errorDiv = document.getElementById('modalError');
+      successDiv.style.display = 'none';
+      errorDiv.style.display = 'none';
+
+      try {
+        if (isEditMode) {
+          // Update
+          await adminAuthFetch(`/admin/parametros/${encodeURIComponent(originalGrupo)}/${encodeURIComponent(originalTipo)}`, {
+            method: 'PUT',
+            body: JSON.stringify({ valor })
+          });
+        } else {
+          // Create
+          await adminAuthFetch('/admin/parametros', {
+            method: 'POST',
+            body: JSON.stringify({ grupo, tipo, valor })
+          });
+        }
+
+        successDiv.textContent = isEditMode ? '✅ Parámetro actualizado correctamente' : '✅ Parámetro creado correctamente';
+        successDiv.style.display = 'block';
+
+        await loadParameters();
+
+        setTimeout(() => {
+          closeModal();
+        }, 1500);
+      } catch (error) {
+        errorDiv.textContent = error.message;
+        errorDiv.style.display = 'block';
+      }
+    });
+
+    // Search and Filter
+    document.getElementById('searchInput').addEventListener('input', renderTable);
+    document.getElementById('filterGrupo').addEventListener('change', renderTable);
+  </script>
+</body>
+</html>

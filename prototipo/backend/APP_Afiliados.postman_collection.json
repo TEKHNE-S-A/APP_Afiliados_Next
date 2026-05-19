@@ -1,0 +1,980 @@
+{
+  "info": {
+    "name": "APP Afiliados — Backend API",
+    "description": "Colección completa del backend Node.js / Express (puerto 3000). Variables: baseUrl, adminToken, userToken.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "app-afiliados-backend-2026"
+  },
+  "variable": [
+    { "key": "baseUrl",    "value": "http://localhost:3000", "type": "string" },
+    { "key": "userToken",  "value": "",                      "type": "string" },
+    { "key": "adminToken", "value": "",                      "type": "string" }
+  ],
+  "item": [
+
+    {
+      "name": "🔑 Auth",
+      "item": [
+        {
+          "name": "Login usuario",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "const b = pm.response.json();",
+            "const t = b.token || b.access_token;",
+            "if (t) { pm.collectionVariables.set('userToken', t); pm.test('Token guardado', () => pm.expect(t).to.be.a('string')); }"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"rios@gmail.com\",\n  \"password\": \"12345678\"\n}" }
+          }
+        },
+        {
+          "name": "Perfil usuario autenticado",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/auth/me",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }]
+          }
+        },
+        {
+          "name": "Verificar token",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/auth/verify-token",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }]
+          }
+        },
+        {
+          "name": "Refresh token",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/auth/refresh-token",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"\"\n}" }
+          }
+        },
+        {
+          "name": "Cambiar contraseña",
+          "request": {
+            "method": "PUT", "url": "{{baseUrl}}/users/password",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"12345678\",\n  \"newPassword\": \"nuevaPass123\"\n}" }
+          }
+        },
+        {
+          "name": "Recuperar contraseña (solicitar código)",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/auth/recover-password",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"rios@gmail.com\"\n}" }
+          }
+        },
+        {
+          "name": "Verificar código de recuperación",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/auth/verify-recovery-code",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"rios@gmail.com\",\n  \"code\": \"123456\"\n}" }
+          }
+        },
+        {
+          "name": "Reset contraseña",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/auth/reset-password",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"rios@gmail.com\",\n  \"code\": \"123456\",\n  \"newPassword\": \"nuevaPass123\"\n}" }
+          }
+        },
+        {
+          "name": "Sesiones activas",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/auth/sessions",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }]
+          }
+        },
+        {
+          "name": "Revocar otras sesiones",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/auth/sessions/revoke-others",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }]
+          }
+        },
+        {
+          "name": "Revocar sesión por ID",
+          "request": {
+            "method": "DELETE", "url": "{{baseUrl}}/auth/sessions/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": { "raw": "{{baseUrl}}/auth/sessions/SESSION_ID_AQUI", "host": ["{{baseUrl}}"], "path": ["auth", "sessions", "SESSION_ID_AQUI"] }
+          }
+        },
+        {
+          "name": "Set AfiliadoId manual",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/auth/set-afiliado-id",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"afiliadoId\": \"000000380000000000001000000380\"\n}" }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "📋 Registro",
+      "item": [
+        {
+          "name": "Registrar nuevo usuario",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/register",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"nuevo@test.com\",\n  \"password\": \"Pass1234\",\n  \"cuil\": \"20123456789\",\n  \"fechaNacimiento\": \"1990-01-15\",\n  \"sexo\": \"M\",\n  \"cantidadIntegrantes\": 1\n}" }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🪪 Credenciales",
+      "item": [
+        {
+          "name": "Obtener credenciales grupo familiar",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/credencial",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }]
+          }
+        },
+        {
+          "name": "Credenciales (alias /credenciales)",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/credenciales",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }]
+          }
+        },
+        {
+          "name": "Refrescar credenciales",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/credenciales/refresh",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }]
+          }
+        },
+        {
+          "name": "Sincronizar credenciales",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/credenciales/sync",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }]
+          }
+        },
+        {
+          "name": "Constancia PDF",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/credencial/constancia.pdf",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }]
+          }
+        },
+        {
+          "name": "Compartir credencial",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/credencial/compartir",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"afiliadoId\": \"000000380000000000001000000380\"\n}" }
+          }
+        },
+        {
+          "name": "Ver credencial compartida (por token)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/credencial/shared/TOKEN_COMPARTIDO", "host": ["{{baseUrl}}"], "path": ["credencial", "shared", "TOKEN_COMPARTIDO"] }
+          }
+        },
+        {
+          "name": "Sync manual (localhost only)",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/credencial/sync-manual",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"rios@gmail.com\"\n}" }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🔐 Token de Presencialidad",
+      "item": [
+        {
+          "name": "Validar token por afiliadoId",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/credencial/token-valido?afiliadoId=000000380000000000001000000380&token=535",
+              "host": ["{{baseUrl}}"],
+              "path": ["credencial", "token-valido"],
+              "query": [
+                { "key": "afiliadoId", "value": "000000380000000000001000000380" },
+                { "key": "token",      "value": "535" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Validar token por DNI ✅ (requiere auth)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/credencial/token-valido-dni?dni=28878765&token=842",
+              "host": ["{{baseUrl}}"],
+              "path": ["credencial", "token-valido-dni"],
+              "query": [
+                { "key": "dni",   "value": "28878765" },
+                { "key": "token", "value": "842" }
+              ]
+            },
+            "description": "Busca en nuusuari por DNI, cruza con crcreden.crcredocum, valida token SHA256.\nRequiere Bearer token de sesión O header X-API-Key."
+          }
+        },
+        {
+          "name": "Validar token por DNI — vía API Key (SIA externo)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-API-Key", "value": "CLAVE_SIA_AQUI" }],
+            "url": {
+              "raw": "{{baseUrl}}/credencial/token-valido-dni?dni=28878765&token=842",
+              "host": ["{{baseUrl}}"],
+              "path": ["credencial", "token-valido-dni"],
+              "query": [
+                { "key": "dni",   "value": "28878765" },
+                { "key": "token", "value": "842" }
+              ]
+            },
+            "description": "Autenticación mediante X-API-Key configurada en nusispar (CREDENCIAL.ApiKeySistemaExterno)."
+          }
+        },
+        {
+          "name": "Validar token por DNI — sin auth (401)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/credencial/token-valido-dni?dni=28878765&token=842",
+              "host": ["{{baseUrl}}"],
+              "path": ["credencial", "token-valido-dni"],
+              "query": [
+                { "key": "dni",   "value": "28878765" },
+                { "key": "token", "value": "842" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Validar token por DNI — formato inválido (400)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/credencial/token-valido-dni?dni=ABCDEF&token=99",
+              "host": ["{{baseUrl}}"],
+              "path": ["credencial", "token-valido-dni"],
+              "query": [
+                { "key": "dni",   "value": "ABCDEF" },
+                { "key": "token", "value": "99" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🏥 SIA — Autorizaciones",
+      "item": [
+        {
+          "name": "Prestaciones disponibles",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/sia/prestaciones",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" }
+          }
+        },
+        {
+          "name": "Enrolamientos del afiliado",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/sia/enrolamientos",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"afiliadoId\": \"000000380000000000001000000380\"\n}" }
+          }
+        },
+        {
+          "name": "Enrolamientos por afiliado (GET)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/sia/enrolamientos-afiliado?afiliadoId=000000380000000000001000000380",
+              "host": ["{{baseUrl}}"], "path": ["sia", "enrolamientos-afiliado"],
+              "query": [{ "key": "afiliadoId", "value": "000000380000000000001000000380" }]
+            }
+          }
+        },
+        {
+          "name": "Solicitudes del afiliado",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/sia/solicitudes",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"afiliadoId\": \"000000380000000000001000000380\"\n}" }
+          }
+        },
+        {
+          "name": "Crear solicitud de autorización (Sin Prescripción)",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/sia/crear-solicitud",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"AUSolTipo\": \"S\",\n  \"AUSolPresTipo\": \"A\",\n  \"AUSolPresId\": \"14201010101\",\n  \"AUSolGravCodigo\": 101,\n  \"AUSolPresCant\": 2,\n  \"AUSolRefAfiliado\": \"Consulta de prueba\",\n  \"AUSolObsPref\": \"\"\n}" }
+          }
+        },
+        {
+          "name": "Crear solicitud de autorización (Con Prescripción)",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/sia/crear-solicitud",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"AUSolTipo\": \"P\",\n  \"AUSolPresTipo\": \"A\",\n  \"AUSolPresId\": \"14201010101\",\n  \"AUSolGravCodigo\": 101,\n  \"AUSolPresCant\": 1,\n  \"AUSolRefAfiliado\": \"Consulta con receta\",\n  \"AUSolObsPref\": \"\",\n  \"Foto\": []\n}" }
+          }
+        },
+        {
+          "name": "Imprimir autorización",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/sia/autorizacion-imprimir",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"solicitudId\": \"SOL_ID_AQUI\"\n}" }
+          }
+        },
+        {
+          "name": "Coseguros pendientes",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/sia/coseguros-pendientes",
+              "host": ["{{baseUrl}}"], "path": ["sia", "coseguros-pendientes"]
+            }
+          }
+        },
+        {
+          "name": "Pago de coseguro",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/sia/pago-coseguro",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"coseguroId\": \"ID_AQUI\"\n}" }
+          }
+        },
+        {
+          "name": "Historial de atención",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/sia/historial-atencion?fechaDesde=2025-01-01&fechaHasta=2025-12-31&pagina=1",
+              "host": ["{{baseUrl}}"], "path": ["sia", "historial-atencion"],
+              "query": [
+                { "key": "fechaDesde", "value": "2025-01-01" },
+                { "key": "fechaHasta", "value": "2025-12-31" },
+                { "key": "pagina",     "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Detalle de consumo",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/sia/detalle-consumo",
+              "host": ["{{baseUrl}}"], "path": ["sia", "detalle-consumo"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🔒 GAM — Autenticación",
+      "item": [
+        {
+          "name": "Registrar en GAM",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/gam/register",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"nuevo@test.com\",\n  \"password\": \"Pass1234\",\n  \"nombre\": \"Juan\",\n  \"apellido\": \"Pérez\"\n}" }
+          }
+        },
+        {
+          "name": "Login GAM",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "const b = pm.response.json();",
+            "const t = b.access_token || b.token;",
+            "if (t) pm.collectionVariables.set('userToken', t);"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/gam/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"usuario@test.com\",\n  \"password\": \"Pass1234\"\n}" }
+          }
+        },
+        {
+          "name": "Info usuario GAM",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/gam/userinfo",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }]
+          }
+        },
+        {
+          "name": "Cambiar contraseña GAM",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/gam/change-password",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"Pass1234\",\n  \"newPassword\": \"NuevaPass5678\"\n}" }
+          }
+        },
+        {
+          "name": "Recuperación de contraseña GAM",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/gam/password-recovery",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"usuario@test.com\"\n}" }
+          }
+        },
+        {
+          "name": "Validar usuario GAM",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/gam/validate-user",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"usuario@test.com\"\n}" }
+          }
+        },
+        {
+          "name": "Logout GAM",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/gam/logout",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }]
+          }
+        },
+        {
+          "name": "Sync token GAM",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/gam/sync-token",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"gamToken\": \"TOKEN_GAM_AQUI\"\n}" }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "👤 Usuario — Favoritos y Recientes",
+      "item": [
+        {
+          "name": "Agregar favorito",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/me/favoritos",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"caentid\": \"PRESTADOR_ID_AQUI\"\n}" }
+          }
+        },
+        {
+          "name": "Listar favoritos",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/api/me/favoritos",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }]
+          }
+        },
+        {
+          "name": "Eliminar favorito",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": { "raw": "{{baseUrl}}/api/me/favoritos/CAENTID_AQUI", "host": ["{{baseUrl}}"], "path": ["api", "me", "favoritos", "CAENTID_AQUI"] }
+          }
+        },
+        {
+          "name": "Listar recientes",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/api/me/recientes",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }]
+          }
+        },
+        {
+          "name": "Agregar reciente",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/me/recientes",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"caentid\": \"PRESTADOR_ID_AQUI\"\n}" }
+          }
+        },
+        {
+          "name": "Favoritos y recientes combinados",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/api/me/favoritos-y-recientes",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }]
+          }
+        },
+        {
+          "name": "Limpiar recientes",
+          "request": {
+            "method": "DELETE", "url": "{{baseUrl}}/api/me/recientes",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }]
+          }
+        },
+        {
+          "name": "Preferencias de notificaciones",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/api/me/notification-preferences",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }]
+          }
+        },
+        {
+          "name": "Actualizar preferencias de notificaciones",
+          "request": {
+            "method": "PUT", "url": "{{baseUrl}}/api/me/notification-preferences",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"pushEnabled\": true,\n  \"emailEnabled\": false\n}" }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🔔 Notificaciones",
+      "item": [
+        {
+          "name": "Listar notificaciones",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/notifications",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }]
+          }
+        },
+        {
+          "name": "Marcar notificación como leída",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": { "raw": "{{baseUrl}}/notifications/mark-read/NOTIF_ID", "host": ["{{baseUrl}}"], "path": ["notifications", "mark-read", "NOTIF_ID"] }
+          }
+        },
+        {
+          "name": "Marcar todas como leídas",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/notifications/mark-all-read",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }]
+          }
+        },
+        {
+          "name": "Eliminar notificación",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": { "raw": "{{baseUrl}}/notifications/NOTIF_ID", "host": ["{{baseUrl}}"], "path": ["notifications", "NOTIF_ID"] }
+          }
+        },
+        {
+          "name": "Registrar token push",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/notifications/register-token",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"token\": \"EXPO_PUSH_TOKEN_AQUI\",\n  \"plataforma\": \"android\"\n}" }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "⚙️ Admin — Login",
+      "item": [
+        {
+          "name": "Login admin",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "const b = pm.response.json();",
+            "const t = b.token || b.access_token;",
+            "if (t) { pm.collectionVariables.set('adminToken', t); pm.test('Admin token guardado', () => pm.expect(t).to.be.a('string')); }"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/admin/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@test.local\",\n  \"password\": \"admin123\"\n}" }
+          }
+        },
+        {
+          "name": "Logout admin",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/admin/logout",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }]
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "⚙️ Admin — Parámetros",
+      "item": [
+        {
+          "name": "Listar todos los parámetros",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/admin/parametros",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }]
+          }
+        },
+        {
+          "name": "Parámetros por grupo",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/admin/parametros/CREDENCIAL", "host": ["{{baseUrl}}"], "path": ["admin", "parametros", "CREDENCIAL"] }
+          }
+        },
+        {
+          "name": "Obtener parámetro específico",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/admin/parametros/CREDENCIAL/TimeoutTokenCredencial", "host": ["{{baseUrl}}"], "path": ["admin", "parametros", "CREDENCIAL", "TimeoutTokenCredencial"] }
+          }
+        },
+        {
+          "name": "Crear parámetro",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/admin/parametros",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"grupo\": \"GENERALES\",\n  \"tipo\": \"NuevoParam\",\n  \"valor\": \"valor_default\"\n}" }
+          }
+        },
+        {
+          "name": "Actualizar parámetro",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"valor\": \"10\"\n}" },
+            "url": { "raw": "{{baseUrl}}/admin/parametros/CREDENCIAL/TimeoutTokenCredencial", "host": ["{{baseUrl}}"], "path": ["admin", "parametros", "CREDENCIAL", "TimeoutTokenCredencial"] }
+          }
+        },
+        {
+          "name": "Eliminar parámetro",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/admin/parametros/GRUPO/TIPO", "host": ["{{baseUrl}}"], "path": ["admin", "parametros", "GRUPO", "TIPO"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "⚙️ Admin — Usuarios",
+      "item": [
+        {
+          "name": "Listar usuarios",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users?page=1&limit=20",
+              "host": ["{{baseUrl}}"], "path": ["admin", "users"],
+              "query": [
+                { "key": "page",  "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Detalle usuario por ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/admin/users/NUUSUID_AQUI", "host": ["{{baseUrl}}"], "path": ["admin", "users", "NUUSUID_AQUI"] }
+          }
+        },
+        {
+          "name": "Estadísticas de usuarios",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/admin/stats/users",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }]
+          }
+        },
+        {
+          "name": "Desactivar usuario",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/admin/user/deactivate",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"nuusuid\": \"NUUSUID_AQUI\",\n  \"motivo\": \"Baja solicitada\"\n}" }
+          }
+        },
+        {
+          "name": "Reactivar usuario",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/admin/user/reactivate",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"nuusuid\": \"NUUSUID_AQUI\"\n}" }
+          }
+        },
+        {
+          "name": "Listar admins backend",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/admin/backend-admins",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }]
+          }
+        },
+        {
+          "name": "Agregar admin backend",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/admin/backend-admins/add",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"nuevo.admin@osep.gob.ar\",\n  \"nombre\": \"Nuevo Admin\",\n  \"password\": \"admin123\"\n}" }
+          }
+        },
+        {
+          "name": "Quitar admin backend",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/admin/backend-admins/remove",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin.a.quitar@osep.gob.ar\"\n}" }
+          }
+        },
+        {
+          "name": "Dar admin a usuario existente",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/admin/user/grant-backend-admin",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"nuusuid\": \"NUUSUID_AQUI\"\n}" }
+          }
+        },
+        {
+          "name": "Quitar admin a usuario",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/admin/user/revoke-backend-admin",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"nuusuid\": \"NUUSUID_AQUI\"\n}" }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "⚙️ Admin — Notificaciones",
+      "item": [
+        {
+          "name": "Preview broadcast (filtros)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/admin/notifications/broadcast/preview?plataforma=android",
+              "host": ["{{baseUrl}}"], "path": ["admin", "notifications", "broadcast", "preview"],
+              "query": [{ "key": "plataforma", "value": "android" }]
+            }
+          }
+        },
+        {
+          "name": "Enviar broadcast",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/admin/notifications/broadcast",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"titulo\": \"Aviso importante\",\n  \"mensaje\": \"Texto del aviso para todos los afiliados.\",\n  \"plataforma\": \"todos\"\n}" }
+          }
+        },
+        {
+          "name": "Listar notificaciones (admin)",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/admin/notifications/list",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }]
+          }
+        },
+        {
+          "name": "Estadísticas notificaciones",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/admin/notifications/stats",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }]
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "⚙️ Admin — Email",
+      "item": [
+        {
+          "name": "Estado del servicio de email",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/admin/email/status",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }]
+          }
+        },
+        {
+          "name": "Test de email",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/admin/email/test",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"destinatario\": \"admin@test.local\"\n}" }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "📰 Admin — Noticias",
+      "item": [
+        {
+          "name": "Listar noticias",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/admin/noticias",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }]
+          }
+        },
+        {
+          "name": "Crear noticia",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/admin/noticias",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "titulo",    "value": "Nueva noticia",       "type": "text" },
+                { "key": "contenido", "value": "Contenido de prueba", "type": "text" },
+                { "key": "imagen",    "type": "file", "src": "" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Actualizar noticia",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "titulo",    "value": "Título actualizado", "type": "text" },
+                { "key": "contenido", "value": "Nuevo contenido",    "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/admin/noticias/ID_NOTICIA", "host": ["{{baseUrl}}"], "path": ["admin", "noticias", "ID_NOTICIA"] }
+          }
+        },
+        {
+          "name": "Eliminar noticia",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/admin/noticias/ID_NOTICIA", "host": ["{{baseUrl}}"], "path": ["admin", "noticias", "ID_NOTICIA"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🩺 Health & Feature Flags",
+      "item": [
+        {
+          "name": "Health check",
+          "request": { "method": "GET", "url": "{{baseUrl}}/health" }
+        },
+        {
+          "name": "Feature flags",
+          "request": { "method": "GET", "url": "{{baseUrl}}/feature-flags" }
+        },
+        {
+          "name": "¿Habilitar autoriz. sin orden?",
+          "request": { "method": "GET", "url": "{{baseUrl}}/parametros/funciones-app/habilitar-autoriz-sin-orden" }
+        },
+        {
+          "name": "Máximo fotos autorización",
+          "request": { "method": "GET", "url": "{{baseUrl}}/parametros/funciones-app/max-fotos-autorizacion" }
+        },
+        {
+          "name": "Health — observabilidad (admin)",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/health/observability",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }]
+          }
+        },
+        {
+          "name": "Health — alertas (admin)",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/health/alerts",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }]
+          }
+        },
+        {
+          "name": "Health — conectividad WS (admin)",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/health/ws-connectivity",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }]
+          }
+        }
+      ]
+    }
+
+  ]
+}

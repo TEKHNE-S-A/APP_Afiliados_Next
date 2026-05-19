@@ -1,0 +1,490 @@
+import React, { useEffect, useState } from 'react'
+import { View, Text, Button, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Modal, Share, Alert } from 'react-native'
+import { useAuth } from '../contexts/AuthContext'
+import { apiGet } from '../services/api'
+import { useNavigation } from '@react-navigation/native'
+import CredencialCard from '../components/CredencialCard'
+
+interface DashboardData {
+  saldo: number
+  plan: string
+  estado: string
+  proximoTurno: string
+  tramitesPendientes: number
+  notificacionesNoLeidas: number
+}
+
+export default function HomeScreen() {
+  const { user, credenciales, signOut, syncCredenciales } = useAuth()
+  const navigation = useNavigation()
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [modalVisible, setModalVisible] = useState(false)
+  const [selectedCredencial, setSelectedCredencial] = useState<any>(null)
+
+  // Obtener credencial del titular (crcrepropi === 'S')
+  const credencialTitular = credenciales?.find(c => c.crcrepropi === 'S') || credenciales?.[0]
+  
+  // Total de miembros del grupo familiar
+  const totalMiembros = credenciales?.length || 0
+  const miembrosFamiliares = credenciales?.filter(c => c.crcrepropi === 'N').length || 0
+
+  const getNombreCompleto = (): string => {
+    // Primero intenta obtener de la credencial titular
+    if (credencialTitular?.crcreapeno) {
+      return credencialTitular.crcreapeno
+    }
+    // Fallback a datos del usuario
+    return user?.name || user?.nombre || user?.fullName || user?.username || 'Usuario'
+  }
+
+  const fetchDashboard = async () => {
+    setLoading(true)
+    try {
+      const response = await apiGet('/dashboard')
+      setDashboard(response.data)
+    } catch (error) {
+      console.error('Error al cargar dashboard:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchDashboard()
+  }, [])
+
+  const onLogout = async () => {
+    await signOut()
+  }
+
+  const handleVerTodasCredenciales = () => {
+    // @ts-ignore - navigation works
+    navigation.navigate('Profile')
+  const handleRefreshCredencial = async () => {
+    try {
+      setLoading(true)
+      await syncCredenciales()
+    } catch (error) {
+      console.error('Error al actualizar credencial:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCredencialPress = (credencial: any) => {
+    setSelectedCredencial(credencial)
+    setModalVisible(true)
+  }
+
+  const handleCompartirCredencial = async () => {
+    try {
+      const credencial = selectedCredencial
+      const mensaje = `
+📇 Credencial ${credencial.crcreapeno}
+DNI: ${credencial.crcredni || 'N/A'}
+CUIL: ${credencial.crcrecuil || 'N/A'}
+Afiliado: ${credencial.crcreid || 'N/A'}
+Plan: ${credencial.nuplaid || 'N/A'}
+Vigencia: ${credencial.crcrefeve ? new Date(credencial.crcrefeve).toLocaleDateString() : 'N/A'}
+      `.trim()
+      
+      await Share.share({
+        message: mensaje,
+        title: 'Mi Credencial'
+      })
+    } catch (error) {
+      console.error('Error al compartir:', error)
+    }
+  }
+
+  const handleActualizarCredencial = async () => {
+    setModalVisible(false)
+    await handleRefreshCredencial()
+    Alert.alert('✅ Actualizado', 'Credencial actualizada correctamente')
+  }
+
+  const handleVerGrupoFamiliar = () => {
+    setModalVisible(false)
+    // @ts-ignore
+    navigation.navigate('Credenciales')
+  }
+
+  return (
+    <ScrollView
+      style={styles.container}
+      refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchDashboard} />}
+    >
+      <View style={styles.header}>
+        <Text style={styles.title}>Bienvenido</Text>
+        <Text style={styles.subtitle}>{getNombreCompleto()}</Text>
+      </View>
+
+      {/* Preview de Credencial Titular */}
+      {credencialTitular ? (
+        <View style={styles.credencialSection}>
+          <View style={styles.credencialHeader}>
+            <Text style={styles.sectionTitle}>📇 Tu Credencial</Text>
+            {totalMiembros > 1 && (
+              <TouchableOpacity onPress={handleVerTodasCredenciales}>
+                <Text style={styles.verTodasLink}>
+                  Ver todas ({totalMiembros})
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          
+          <CredencialCard
+            credencial={credencialTitular}
+            isTitular={credencialTitular.crcrepropi === 'S'}
+            showQR={true}
+            compact={false}
+            onRefresh={handleRefreshCredencial}
+          />
+
+          {totalMiembros > 1 && (
+            <TouchableOpacity 
+              style={styles.verGrupoButton}
+              onPress={handleVerTodasCredenciales}
+            >
+              <Text style={styles.verGrupoIcon}>👨‍👩‍👧‍👦</Text>
+              <View style={styles.verGrupoTextContainer}>
+                <Text style={styles.verGrupoTitle}>Grupo Familiar</Text>
+                <Text style={styles.verGrupoSubtitle}>
+                  {miembrosFamiliares} {miembrosFamiliares === 1 ? 'familiar' : 'familiares'} registrado{miembrosFamiliares === 1 ? '' : 's'}
+                </Text>
+              </View>
+              <Text style={styles.verGrupoArrow}>→</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      ) : (
+        <View style={styles.noCredencialContainer}>
+          <Text style={styles.noCredencialIcon}>📋</Text>
+          <Text style={styles.noCredencialTitle}>Sin credencial</Text>
+          <Text style={styles.noCredencialText}>
+            {credenciales.length === 0 
+              ? 'Desliza hacia abajo para actualizar'
+              : 'No se encontró credencial del titular'}
+          </Text>
+        </View>
+      )}
+
+      {dashboard && (
+        <>
+          <View style={[styles.card, styles.planCard]}>
+            <Text style={styles.cardLabel}>Plan Actual</Text>
+      <View style={styles.footer}>
+        <Button title="Cerrar sesión" onPress={onLogout} color="red" />
+      </View>
+
+      {/* Modal con credencial completa, QR y opciones */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Header del modal */}
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Tu Credencial</Text>
+                <TouchableOpacity onPress={() => setModalVisible(false)}>
+                  <Text style={styles.modalClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Credencial con QR */}
+              {selectedCredencial && (
+                <CredencialCard
+                  credencial={selectedCredencial}
+                  isTitular={selectedCredencial.crcrepropi === 'S'}
+                  showQR={true}
+                  compact={false}
+                />
+              )}
+
+              {/* Opciones */}
+              <View style={styles.modalActions}>
+                <TouchableOpacity 
+                  style={styles.actionButton}
+                  onPress={handleActualizarCredencial}
+                >
+                  <Text style={styles.actionIcon}>🔄</Text>
+                  <Text style={styles.actionText}>Actualizar credencial</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={styles.actionButton}
+                  onPress={handleCompartirCredencial}
+                >
+                  <Text style={styles.actionIcon}>📤</Text>
+                  <Text style={styles.actionText}>Compartir credencial</Text>
+                </TouchableOpacity>
+
+                {totalMiembros > 1 && (
+                  <TouchableOpacity 
+                    style={[styles.actionButton, styles.actionButtonPrimary]}
+                    onPress={handleVerGrupoFamiliar}
+                  >
+                    <Text style={styles.actionIcon}>👨‍👩‍👧‍👦</Text>
+                    <View style={styles.actionTextContainer}>
+                      <Text style={styles.actionTextPrimary}>Ver grupo familiar</Text>
+                      <Text style={styles.actionSubtext}>
+                        {totalMiembros} {totalMiembros === 1 ? 'credencial' : 'credenciales'}
+                      </Text>
+                    </View>
+                    <Text style={styles.actionArrow}>→</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+    </ScrollView>
+  )
+}
+          <View style={styles.statsGrid}>
+            <View style={styles.statCard}>
+              <Text style={styles.statValue}>{dashboard.tramitesPendientes}</Text>
+              <Text style={styles.statLabel}>Trámites</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statValue}>{dashboard.notificacionesNoLeidas}</Text>
+              <Text style={styles.statLabel}>Notif.</Text>
+            </View>
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>Estado de Cuenta</Text>
+            <Text style={[styles.saldo, { color: dashboard.saldo < 0 ? '#f44336' : '#4caf50' }]}>
+              ${Math.abs(dashboard.saldo).toFixed(2)}
+            </Text>
+          </View>
+
+          {dashboard.proximoTurno && (
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>Próximo Turno</Text>
+              <Text style={styles.turno}>{dashboard.proximoTurno}</Text>
+            </View>
+          )}
+        </>
+      )}
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Acceso rápido</Text>
+        <Text style={styles.hint}>• Trámites — Gestiona tus solicitudes</Text>
+        <Text style={styles.hint}>• Historial — Revisa transacciones</Text>
+        <Text style={styles.hint}>• Perfil — Edita tu información</Text>
+      </View>
+
+      <View style={styles.footer}>
+        <Button title="Cerrar sesión" onPress={onLogout} color="red" />
+      </View>
+    </ScrollView>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  header: { backgroundColor: '#2196f3', padding: 20, paddingTop: 30 },
+  title: { fontSize: 22, fontWeight: 'bold', color: '#fff', textAlign: 'center' },
+  
+  // Vista preliminar credencial (compacta)
+  credencialPreview: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 16,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    overflow: 'hidden',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#6B7280',
+    marginTop: 4,
+  },
+  credencialSection: {
+    marginHorizontal: 16,
+    marginTop: 16,
+  },
+  credencialHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  verTodasLink: {
+    fontSize: 14,
+    color: '#667eea',
+    fontWeight: '600',
+  },
+  verGrupoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 12,
+  section: { backgroundColor: '#fff', padding: 16, borderRadius: 8, marginHorizontal: 16, marginTop: 12 },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
+  hint: { fontSize: 13, color: '#555', marginBottom: 6, lineHeight: 20 },
+  footer: { padding: 16, paddingBottom: 24 },
+  
+  // Estilos del modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#f5f5f5',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '90%',
+    paddingBottom: 32,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 12,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1F2937',
+  },
+  modalClose: {
+    fontSize: 28,
+    color: '#6B7280',
+    fontWeight: '300',
+  },
+  modalActions: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    gap: 12,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  actionButtonPrimary: {
+    backgroundColor: '#667eea',
+  },
+  actionIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  actionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    flex: 1,
+  },
+  actionTextContainer: {
+    flex: 1,
+  },
+  actionTextPrimary: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 2,
+  },
+  actionSubtext: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+  actionArrow: {
+    fontSize: 20,
+    color: 'white',
+    fontWeight: 'bold',
+  },
+})  elevation: 3,
+  },
+  verGrupoIcon: {
+    fontSize: 32,
+    marginRight: 12,
+  },
+  verGrupoTextContainer: {
+    flex: 1,
+  },
+  verGrupoTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 2,
+  },
+  verGrupoSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  verGrupoArrow: {
+    fontSize: 24,
+    color: '#667eea',
+    fontWeight: 'bold',
+  },
+  noCredencialContainer: {
+    backgroundColor: 'white',
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 32,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  noCredencialIcon: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  noCredencialTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 8,
+  },
+  noCredencialText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+
+  card: { backgroundColor: '#fff', padding: 16, borderRadius: 8, marginHorizontal: 16, marginTop: 12, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
+  planCard: { backgroundColor: '#1976d2', marginTop: -10 },
+  cardLabel: { fontSize: 12, color: '#e3f2fd', textTransform: 'uppercase', marginBottom: 4 },
+  planName: { fontSize: 20, fontWeight: 'bold', color: '#fff', marginBottom: 8 },
+  badge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
+  badgeText: { color: '#fff', fontSize: 11, fontWeight: 'bold' },
+  statsGrid: { flexDirection: 'row', paddingHorizontal: 16, marginTop: 12, gap: 12 },
+  statCard: { flex: 1, backgroundColor: '#fff', padding: 16, borderRadius: 8, alignItems: 'center', elevation: 2 },
+  statValue: { fontSize: 28, fontWeight: 'bold', color: '#2196f3' },
+  statLabel: { fontSize: 11, color: '#666', marginTop: 4 },
+  saldo: { fontSize: 30, fontWeight: 'bold', marginTop: 4 },
+  turno: { fontSize: 16, color: '#333', marginTop: 4 },
+  section: { backgroundColor: '#fff', padding: 16, borderRadius: 8, marginHorizontal: 16, marginTop: 12 },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
+  hint: { fontSize: 13, color: '#555', marginBottom: 6, lineHeight: 20 },
+  footer: { padding: 16, paddingBottom: 24 },
+})

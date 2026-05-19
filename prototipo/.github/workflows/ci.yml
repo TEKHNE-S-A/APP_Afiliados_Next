@@ -1,0 +1,133 @@
+name: CI - Mobile & Backend
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  mobile:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./mobile
+
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+        
+      - name: Lint
+        run: npm run lint
+        
+      - name: Build web
+        run: npx expo build:web 2>/dev/null || echo "Web build skipped"
+
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: Install dependencies
+        run: npm install
+        
+      - name: Check syntax
+        run: node -c server-soap.js && node -c server.js
+
+  backend-integration-strict:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: app_afiliados_genexus
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: 12345678
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d app_afiliados_genexus"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm install
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Init database schema for integration tests
+        env:
+          PGPASSWORD: 12345678
+        run: |
+          psql -h 127.0.0.1 -U postgres -d app_afiliados_genexus -f ./backend/db/dll_estructura_app_final2.sql
+          psql -h 127.0.0.1 -U postgres -d app_afiliados_genexus -f ./backend/db/create_nuusuauth_table.sql
+
+      - name: Start backend
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_USER: postgres
+          DB_PASSWORD: 12345678
+          DB_NAME: app_afiliados_genexus
+          PORT: 3000
+        run: |
+          node ./backend/server-soap.js > backend.log 2>&1 &
+          echo $! > backend.pid
+
+      - name: Wait for backend health
+        run: |
+          for i in {1..40}; do
+            if curl -fsS http://127.0.0.1:3000/health > /dev/null; then
+              echo "Backend healthy"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "Backend did not become healthy"
+          cat backend.log || true
+          exit 1
+
+      - name: Run strict pre-push validation
+        shell: pwsh
+        run: ./pre-push-validation.ps1 -StrictIntegration
+
+      - name: Upload backend log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-log
+          path: backend.log
+
+      - name: Stop backend
+        if: always()
+        run: |
+          if [ -f backend.pid ]; then
+            kill $(cat backend.pid) || true
+          fi

@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Noticias / Novedades — Admin</title>
+  <link rel="stylesheet" href="/admin-shared.css" />
+  <script src="/admin-nav.js"></script>
+  <script src="/admin-shared.js"></script>
+  <style>
+    .container { max-width: 1100px; margin: 0 auto; }
+
+    /* ── Login ── */
+    .login-container {
+      max-width: 400px; margin: 100px auto;
+      background: white; padding: 40px;
+      border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    .login-container h1 { color: #333; text-align: center; margin-bottom: 10px; }
+    .login-container p  { color: #666; text-align: center; margin-bottom: 30px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; margin-bottom: 6px; font-weight: 500; color: #333; }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%; padding: 10px 12px;
+      border: 2px solid #e0e0e0; border-radius: 8px;
+      font-size: 14px; transition: border 0.2s;
+    }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+      outline: none; border-color: #667eea;
+    }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+    .btn {
+      padding: 10px 20px; border: none; border-radius: 8px;
+      font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s;
+    }
+    .btn-primary { background: #667eea; color: white; }
+    .btn-primary:hover { background: #5568d3; }
+    .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+    .btn-danger { background: #e53e3e; color: white; }
+    .btn-danger:hover { background: #c53030; }
+    .btn-success { background: #38a169; color: white; }
+    .btn-success:hover { background: #2f855a; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    .btn-block { width: 100%; }
+
+    /* ── App ── */
+    .app-container { display: none; }
+
+    /* ── Stats bar ── */
+    .stats-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .stat-card {
+      background: white; border-radius: 10px;
+      padding: 14px 20px; min-width: 120px; text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .stat-card .num { font-size: 28px; font-weight: 700; color: #667eea; }
+    .stat-card .lbl { font-size: 12px; color: #666; margin-top: 2px; }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      background: white; border-radius: 10px; padding: 16px 20px;
+      margin-bottom: 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .toolbar h2 { flex: 1; font-size: 18px; color: #333; }
+
+    /* ── Grid de noticias ── */
+    .grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+    }
+    .noticia-card {
+      background: white; border-radius: 12px; overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08); transition: box-shadow 0.2s;
+    }
+    .noticia-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.14); }
+    .noticia-card.inactiva { opacity: 0.55; }
+
+    .noticia-img {
+      width: 100%; height: 180px; object-fit: cover; display: block;
+      background: #f0f0f0;
+    }
+    .noticia-img-placeholder {
+      width: 100%; height: 80px;
+      display: flex; align-items: center; justify-content: center;
+      background: #f5f5f5; color: #bbb; font-size: 13px;
+    }
+    .preview-hint {
+      font-size: 11px;
+      color: #777;
+      background: #fafafa;
+      border-top: 1px solid #efefef;
+      padding: 6px 10px;
+    }
+    .noticia-body { padding: 14px 16px; }
+    .noticia-titulo { font-size: 16px; font-weight: 700; color: #222; margin-bottom: 6px; }
+    .noticia-meta {
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .badge {
+      font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px;
+    }
+    .badge-tipo    { background: #ebf4ff; color: #3182ce; }
+    .badge-activa  { background: #e6ffed; color: #276749; }
+    .badge-inactiva{ background: #fff5f5; color: #c53030; }
+    .badge-orden   { background: #fefcbf; color: #7b5f00; }
+    .noticia-contenido { font-size: 13px; color: #555; margin-bottom: 10px; max-height: 60px; overflow: hidden; }
+    .noticia-fecha { font-size: 11px; color: #999; margin-bottom: 10px; }
+    .noticia-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5); z-index: 1000;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .noticia-modal {
+      background: white; border-radius: 12px; padding: 28px;
+      width: 90%; max-width: 540px; max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .noticia-modal h3 { font-size: 18px; color: #333; margin-bottom: 20px; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+    .img-preview {
+      width: 100%; max-height: 220px; object-fit: cover;
+      border-radius: 8px; margin-top: 8px; display: none;
+    }
+    .current-img-wrap { margin-top: 8px; }
+    .current-img-wrap img { max-height: 140px; border-radius: 6px; object-fit: cover; }
+    .current-img-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+    .image-hint {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #666;
+      background: #f7f7f7;
+      border: 1px solid #ececec;
+      border-radius: 8px;
+      padding: 8px 10px;
+      line-height: 1.4;
+    }
+
+    .empty-state {
+      background: white; border-radius: 12px; padding: 60px;
+      text-align: center; grid-column: 1/-1;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .empty-state .icon { font-size: 52px; margin-bottom: 12px; }
+    .empty-state p { color: #666; }
+
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: #333; color: white;
+      padding: 12px 20px; border-radius: 8px;
+      font-size: 14px; opacity: 0; transition: opacity 0.3s;
+      z-index: 2000; pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+    .toast.error { background: #e53e3e; }
+    .toast.success { background: #38a169; }
+
+    .login-error { color: #e53e3e; text-align: center; margin-top: 12px; display: none; }
+    .current-img-wrap-hidden { display: none; }
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 6px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .mt-8 { margin-top: 8px; }
+    .row-2 { display: flex; gap: 12px; }
+    .row-2 .form-group { flex: 1; }
+    .btn-edit-soft { background: #ebf4ff; color: #3182ce; }
+    .btn-toggle-soft { background: #fefcbf; color: #7b5f00; }
+  </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+
+<!-- ══ LOGIN ══════════════════════════════════════════════════════════ -->
+<div id="loginScreen" class="login-container">
+  <h1>🗞️ Noticias Admin</h1>
+  <p>Ingresá tus credenciales de administrador</p>
+  <div class="form-group">
+    <label>Email</label>
+    <input type="email" id="loginEmail" placeholder="admin@osep.gob.ar" />
+  </div>
+  <div class="form-group">
+    <label>Contraseña</label>
+    <input type="password" id="loginPassword" placeholder="••••••" />
+  </div>
+  <button class="btn btn-primary btn-block" id="loginBtn" onclick="doLogin()">Ingresar</button>
+  <p id="loginError" class="login-error"></p>
+</div>
+
+<!-- ══ APP ═════════════════════════════════════════════════════════════ -->
+<div class="app-container container" id="appScreen">
+  <header>
+    <div class="header-top">
+      <h1>🗞️ Noticias / Novedades</h1>
+      <div class="header-actions">
+        <div class="user-info"><span id="userInfo">👤 Admin</span></div>
+        <nav aria-label="Navegación principal" class="nav-links">
+          <a href="/admin">Parámetros</a>
+          <a href="/admin/usuarios">Usuarios</a>
+          <a href="/admin/noticias-ui" class="active-nav">Noticias</a>
+          <a href="/admin/planes-ui">Planes</a>
+          <a href="/admin/historial-atencion-ui">Historial</a>
+        </nav>
+        <button class="btn btn-danger btn-sm" onclick="adminLogout('/admin')">Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
+  <nav id="adminBreadcrumb" class="admin-breadcrumb" aria-label="Migas de pan"></nav>
+
+  <main id="main-content">
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat-card"><div class="num" id="statTotal">—</div><div class="lbl">Total</div></div>
+    <div class="stat-card"><div class="num" id="statActivas">—</div><div class="lbl">Activas</div></div>
+    <div class="stat-card"><div class="num" id="statInactivas">—</div><div class="lbl">Inactivas</div></div>
+    <div class="stat-card"><div class="num" id="statImagenes">—</div><div class="lbl">Con imagen</div></div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <h2>Lista de noticias</h2>
+    <button class="btn btn-primary" onclick="openModal()">＋ Nueva noticia</button>
+    <button class="btn btn-sm btn-neutral" onclick="loadNoticias()">🔄 Actualizar</button>
+  </div>
+
+  <!-- Grid -->
+  <div class="grid" id="gridNoticias">
+    <div class="empty-state"><div class="icon">⏳</div><p>Cargando...</p></div>
+  </div>
+  </main>
+  <footer role="contentinfo">
+    <p class="admin-footer-text">Admin OSEP &nbsp;&middot;&nbsp; Noticias y Novedades</p>
+  </footer>
+</div>
+
+<!-- ══ MODAL CREAR / EDITAR ════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="noticia-modal">
+    <h3 id="modalTitle">Nueva Noticia</h3>
+
+    <input type="hidden" id="editId" value="">
+
+    <div class="form-group">
+      <label>Título *</label>
+      <input type="text" id="fTitulo" placeholder="Ej: Nueva prestación disponible" maxlength="200" />
+    </div>
+
+    <div class="form-group">
+      <label>Texto / Descripción <small class="muted-help">(opcional si hay imagen)</small></label>
+      <textarea id="fContenido" placeholder="Escribí el contenido de la noticia..."></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>Imagen <small class="muted-help">(jpg, png, gif, webp — máx 5 MB)</small></label>
+      <div class="image-hint">Recomendado: imagen horizontal en proporción 16:9 (ej.: 1200×675 px).</div>
+      <!-- Imagen actual (solo en edición) -->
+      <div class="current-img-wrap current-img-wrap-hidden" id="currentImgWrap">
+        <p class="current-img-label">Imagen actual:</p>
+        <img id="currentImg" src="" alt="Imagen actual" />
+        <label class="checkbox-row">
+          <input type="checkbox" id="eliminarImagen" /> Eliminar imagen actual
+        </label>
+      </div>
+      <input type="file" id="fImagen" class="mt-8" accept="image/*" onchange="previewImage()" />
+      <img id="imgPreview" class="img-preview" alt="Vista previa" />
+    </div>
+
+    <div class="row-2">
+      <div class="form-group">
+        <label>Orden <small class="muted-help">(menor = primero)</small></label>
+        <input type="number" id="fOrden" value="0" min="0" />
+      </div>
+      <div class="form-group">
+        <label>Estado</label>
+        <select id="fActiva">
+          <option value="true">Activa</option>
+          <option value="false">Inactiva</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row-2">
+      <div class="form-group">
+        <label>Fecha inicio <small class="muted-help">(vacío = sin límite)</small></label>
+        <input type="datetime-local" id="fFechaInicio" />
+      </div>
+      <div class="form-group">
+        <label>Fecha fin <small class="muted-help">(vacío = sin expiración)</small></label>
+        <input type="datetime-local" id="fFechaFin" />
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-neutral" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" id="saveBtn" onclick="saveNoticia()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  let noticiasList = []
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
+  async function doLogin() {
+    const email = document.getElementById('loginEmail').value.trim()
+    const pass  = document.getElementById('loginPassword').value
+    const btn   = document.getElementById('loginBtn')
+    const err   = document.getElementById('loginError')
+    if (!email || !pass) { showErr(err, 'Completá los campos'); return }
+    btn.disabled = true; btn.textContent = 'Ingresando...'
+    err.style.display = 'none'
+    try {
+      const r = await fetch('/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: email, password: pass })
+      })
+      const data = await r.json()
+      if (!r.ok || !data.token) throw new Error(data.message || 'Credenciales incorrectas')
+      AdminSession.set(data.token, data.user?.email || email)
+      document.getElementById('loginScreen').style.display = 'none'
+      document.getElementById('appScreen').style.display = 'block'
+      loadNoticias()
+    } catch(e) {
+      showErr(err, e.message)
+    } finally {
+      btn.disabled = false; btn.textContent = 'Ingresar'
+    }
+  }
+  function showErr(el, msg) { el.textContent = msg; el.style.display = 'block' }
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin() })
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  window.addEventListener('DOMContentLoaded', () => {
+    initAdminPanelAuth({
+      loginId: 'loginScreen',
+      appId: 'appScreen',
+      userInfoId: 'userInfo',
+      onReady: () => loadNoticias()
+    })
+  })
+
+  // ── Load ──────────────────────────────────────────────────────────────────
+  async function loadNoticias() {
+    try {
+      const data = await adminAuthFetch('/admin/noticias')
+      noticiasList = data.noticias || []
+      renderGrid()
+      updateStats()
+    } catch(e) {
+      if (e.message === 'UNAUTHORIZED') return
+      showToast('Error: ' + e.message, 'error')
+      document.getElementById('gridNoticias').innerHTML =
+        '<div class="empty-state"><div class="icon">⚠️</div><p>' + e.message + '</p></div>'
+    }
+  }
+
+  function updateStats() {
+    const activas   = noticiasList.filter(n => n.activa).length
+    const conImg    = noticiasList.filter(n => n.imagen_url).length
+    document.getElementById('statTotal').textContent    = noticiasList.length
+    document.getElementById('statActivas').textContent  = activas
+    document.getElementById('statInactivas').textContent= noticiasList.length - activas
+    document.getElementById('statImagenes').textContent = conImg
+  }
+
+  function renderGrid() {
+    const grid = document.getElementById('gridNoticias')
+    if (!noticiasList.length) {
+      grid.innerHTML = '<div class="empty-state"><div class="icon">📰</div><p>No hay noticias. Creá la primera.</p></div>'
+      return
+    }
+    grid.innerHTML = noticiasList.map(n => cardHTML(n)).join('')
+  }
+
+  function cardHTML(n) {
+    const inactivaCls = n.activa ? '' : 'inactiva'
+    const badgeEstado = n.activa
+      ? '<span class="badge badge-activa">● Activa</span>'
+      : '<span class="badge badge-inactiva">● Inactiva</span>'
+    const imgTag = n.imagen_url
+      ? `<img class="noticia-img" src="${n.imagen_url}" alt="${escHtml(n.titulo)}" onerror="this.style.display='none'" />`
+      : `<div class="noticia-img-placeholder">Sin imagen</div>`
+    const fechas = n.fecha_inicio || n.fecha_fin
+      ? `Vigencia: ${n.fecha_inicio ? fmtDate(n.fecha_inicio) : '∞'} → ${n.fecha_fin ? fmtDate(n.fecha_fin) : '∞'}`
+      : 'Sin restricción de fechas'
+    return `
+      <div class="noticia-card ${inactivaCls}">
+        ${imgTag}
+        <div class="preview-hint">Recomendado: 16:9 (ej.: 1200×675 px)</div>
+        <div class="noticia-body">
+          <div class="noticia-titulo">${escHtml(n.titulo)}</div>
+          <div class="noticia-meta">
+            ${badgeEstado}
+            <span class="badge badge-tipo">${n.tipo}</span>
+            <span class="badge badge-orden">Orden: ${n.orden}</span>
+          </div>
+          ${n.contenido ? `<div class="noticia-contenido">${escHtml(n.contenido)}</div>` : ''}
+          <div class="noticia-fecha">📅 ${fmtDate(n.created_at)} &nbsp;|&nbsp; ${fechas}</div>
+          <div class="noticia-actions">
+            <button class="btn btn-sm btn-edit-soft" onclick="openModal(${n.id})">✏️ Editar</button>
+            <button class="btn btn-sm btn-toggle-soft" onclick="toggleNoticia(${n.id})">
+              ${n.activa ? '⏸ Desactivar' : '▶ Activar'}
+            </button>
+            <button class="btn btn-sm btn-danger" onclick="deleteNoticia(${n.id})">🗑️ Eliminar</button>
+          </div>
+        </div>
+      </div>`
+  }
+
+  // ── Modal ─────────────────────────────────────────────────────────────────
+  function openModal(id) {
+    document.getElementById('modalOverlay').classList.add('open')
+    clearForm()
+    if (id) {
+      const n = noticiasList.find(x => x.id === id)
+      if (!n) return
+      document.getElementById('modalTitle').textContent = 'Editar Noticia'
+      document.getElementById('editId').value = id
+      document.getElementById('fTitulo').value    = n.titulo || ''
+      document.getElementById('fContenido').value = n.contenido || ''
+      document.getElementById('fOrden').value     = n.orden ?? 0
+      document.getElementById('fActiva').value    = String(n.activa)
+      if (n.fecha_inicio) document.getElementById('fFechaInicio').value = toDatetimeLocal(n.fecha_inicio)
+      if (n.fecha_fin)    document.getElementById('fFechaFin').value    = toDatetimeLocal(n.fecha_fin)
+      if (n.imagen_url) {
+        document.getElementById('currentImgWrap').style.display = 'block'
+        document.getElementById('currentImg').src = n.imagen_url
+      }
+    } else {
+      document.getElementById('modalTitle').textContent = 'Nueva Noticia'
+    }
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open')
+    clearForm()
+  }
+
+  function handleOverlayClick(e) {
+    if (e.target === document.getElementById('modalOverlay')) closeModal()
+  }
+
+  function clearForm() {
+    document.getElementById('editId').value       = ''
+    document.getElementById('fTitulo').value      = ''
+    document.getElementById('fContenido').value   = ''
+    document.getElementById('fOrden').value       = '0'
+    document.getElementById('fActiva').value      = 'true'
+    document.getElementById('fFechaInicio').value = ''
+    document.getElementById('fFechaFin').value    = ''
+    document.getElementById('fImagen').value      = ''
+    document.getElementById('imgPreview').style.display = 'none'
+    document.getElementById('currentImgWrap').style.display = 'none'
+    document.getElementById('eliminarImagen').checked = false
+  }
+
+  function previewImage() {
+    const f = document.getElementById('fImagen').files[0]
+    const preview = document.getElementById('imgPreview')
+    if (!f) { preview.style.display = 'none'; return }
+    preview.src = URL.createObjectURL(f)
+    preview.style.display = 'block'
+  }
+
+  async function saveNoticia() {
+    const id    = document.getElementById('editId').value
+    const titulo = document.getElementById('fTitulo').value.trim()
+    if (!titulo) { showToast('El título es obligatorio', 'error'); return }
+
+    const btn = document.getElementById('saveBtn')
+    btn.disabled = true; btn.textContent = 'Guardando...'
+
+    try {
+      const fd = new FormData()
+      fd.append('titulo',    titulo)
+      fd.append('contenido', document.getElementById('fContenido').value.trim())
+      fd.append('orden',     document.getElementById('fOrden').value)
+      fd.append('activa',    document.getElementById('fActiva').value)
+      const fi = document.getElementById('fFechaInicio').value
+      const ff = document.getElementById('fFechaFin').value
+      if (fi) fd.append('fecha_inicio', fi)
+      if (ff) fd.append('fecha_fin',    ff)
+      const imgFile = document.getElementById('fImagen').files[0]
+      if (imgFile) fd.append('imagen', imgFile)
+      if (document.getElementById('eliminarImagen').checked) fd.append('eliminar_imagen', 'true')
+
+      const url    = id ? `/admin/noticias/${id}` : '/admin/noticias'
+      const method = id ? 'PUT' : 'POST'
+      await adminAuthFetch(url, { method, body: fd })
+      closeModal()
+      showToast(id ? 'Noticia actualizada ✓' : 'Noticia creada ✓', 'success')
+      loadNoticias()
+    } catch(e) {
+      if (e.message !== 'UNAUTHORIZED') showToast('Error: ' + e.message, 'error')
+    } finally {
+      btn.disabled = false; btn.textContent = 'Guardar'
+    }
+  }
+
+  async function toggleNoticia(id) {
+    try {
+      const data = await adminAuthFetch(`/admin/noticias/${id}/toggle`, { method: 'PATCH' })
+      showToast(data.activa ? 'Noticia activada' : 'Noticia desactivada', 'success')
+      loadNoticias()
+    } catch(e) {
+      if (e.message !== 'UNAUTHORIZED') showToast('Error: ' + e.message, 'error')
+    }
+  }
+
+  async function deleteNoticia(id) {
+    const ok = await adminConfirm('¿Eliminar esta noticia?', {
+      title: 'Eliminar noticia',
+      confirmText: 'Eliminar',
+      confirmClass: 'btn-danger'
+    })
+    if (!ok) return
+    try {
+      await adminAuthFetch(`/admin/noticias/${id}`, { method: 'DELETE' })
+      showToast('Noticia eliminada', 'success')
+      loadNoticias()
+    } catch(e) {
+      if (e.message !== 'UNAUTHORIZED') showToast('Error: ' + e.message, 'error')
+    }
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function showToast(msg, type = '') {
+    const t = document.getElementById('toast')
+    t.textContent = msg
+    t.className = 'toast show' + (type ? ' ' + type : '')
+    setTimeout(() => t.classList.remove('show'), 3000)
+  }
+  function escHtml(s) { return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) }
+  function fmtDate(s) { if (!s) return '—'; return new Date(s).toLocaleDateString('es-AR', {day:'2-digit',month:'2-digit',year:'numeric'}) }
+  function toDatetimeLocal(s) { if (!s) return ''; const d = new Date(s); const off = d.getTimezoneOffset(); const local = new Date(d.getTime() - off*60000); return local.toISOString().slice(0,16) }
+</script>
+</body>
+</html>

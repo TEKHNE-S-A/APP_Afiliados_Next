@@ -1,0 +1,1028 @@
+{
+  "info": {
+    "name": "APP_Afiliados - Notificaciones API",
+    "description": "Colección completa de endpoints de notificaciones con autenticación JWT automática",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "notif-api-2026-02-18"
+  },
+  "item": [
+    {
+      "name": "0️⃣ Autenticación",
+      "item": [
+        {
+          "name": "Login (Obtener Token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Guardar token en variable de entorno automáticamente",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    ",
+                  "    if (response.token) {",
+                  "        pm.environment.set('auth_token', response.token);",
+                  "        pm.environment.set('nuusuid', response.user.nuusuid);",
+                  "        pm.environment.set('user_email', response.user.nuusumail);",
+                  "        ",
+                  "        console.log('✅ Token guardado exitosamente');",
+                  "        console.log('👤 Usuario:', response.user.nuusuapell);",
+                  "        console.log('🔑 Token:', response.token.substring(0, 20) + '...');",
+                  "        ",
+                  "        pm.test('Login exitoso', () => {",
+                  "            pm.expect(response.token).to.be.a('string');",
+                  "            pm.expect(response.user).to.be.an('object');",
+                  "        });",
+                  "    }",
+                  "} else {",
+                  "    pm.test('Error en login', () => {",
+                  "        pm.expect.fail('Login falló con código: ' + pm.response.code);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{test_username}}\",\n  \"password\": \"{{test_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login para obtener token JWT. El token se guarda automáticamente en la variable de entorno 'auth_token' y se usa en todos los requests posteriores."
+          },
+          "response": []
+        },
+        {
+          "name": "Verificar Usuario Autenticado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    ",
+                  "    console.log('👤 Usuario autenticado:', response.nuusuapell);",
+                  "    console.log('📧 Email:', response.nuusumail);",
+                  "    console.log('🆔 ID:', response.nuusuid);",
+                  "    ",
+                  "    pm.test('Usuario autenticado correctamente', () => {",
+                  "        pm.expect(response.nuusuid).to.be.a('string');",
+                  "        pm.expect(response.nuusumail).to.be.a('string');",
+                  "    });",
+                  "} else {",
+                  "    pm.test('Token inválido o expirado', () => {",
+                  "        pm.expect.fail('Auth failed: ' + pm.response.code);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Verifica que el token JWT sea válido y obtiene información del usuario autenticado."
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints de autenticación. Ejecutar 'Login' primero para obtener el token JWT."
+    },
+    {
+      "name": "1️⃣ Listar Notificaciones",
+      "item": [
+        {
+          "name": "Listar Todas (Paginado)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    ",
+                  "    console.log('📬 Total notificaciones:', response.pagination.totalCount);",
+                  "    console.log('📄 Página:', response.pagination.page + '/' + response.pagination.totalPages);",
+                  "    console.log('📝 Items en esta página:', response.notifications.length);",
+                  "    ",
+                  "    if (response.notifications.length > 0) {",
+                  "        const first = response.notifications[0];",
+                  "        pm.environment.set('sample_notification_id', first.id);",
+                  "        console.log('💾 ID de muestra guardado:', first.id);",
+                  "    }",
+                  "    ",
+                  "    pm.test('Respuesta correcta', () => {",
+                  "        pm.expect(response.notifications).to.be.an('array');",
+                  "        pm.expect(response.pagination).to.be.an('object');",
+                  "        pm.expect(response.pagination.totalCount).to.be.a('number');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notifications?page=1&limit=20&orderBy=fecha_creacion&orderDir=desc",
+              "host": ["{{base_url}}"],
+              "path": ["notifications"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Número de página (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Registros por página (1-100, default: 20)"
+                },
+                {
+                  "key": "orderBy",
+                  "value": "fecha_creacion",
+                  "description": "Campo para ordenar: fecha_creacion, tipo, leida"
+                },
+                {
+                  "key": "orderDir",
+                  "value": "desc",
+                  "description": "Dirección: asc o desc"
+                }
+              ]
+            },
+            "description": "Lista todas las notificaciones del usuario autenticado con paginación."
+          },
+          "response": []
+        },
+        {
+          "name": "Filtrar por Tipo (Autorizaciones)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    ",
+                  "    console.log('📋 Notificaciones de autorizaciones:', response.notifications.length);",
+                  "    ",
+                  "    pm.test('Todas son del tipo autorizacion', () => {",
+                  "        response.notifications.forEach(n => {",
+                  "            pm.expect(n.tipo).to.equal('autorizacion');",
+                  "        });",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notifications?tipo=autorizacion&limit=50",
+              "host": ["{{base_url}}"],
+              "path": ["notifications"],
+              "query": [
+                {
+                  "key": "tipo",
+                  "value": "autorizacion",
+                  "description": "Filtrar por tipo: autorizacion, credencial, general"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Filtra notificaciones solo del tipo 'autorizacion'."
+          },
+          "response": []
+        },
+        {
+          "name": "Solo No Leídas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    ",
+                  "    console.log('📬 Notificaciones no leídas:', response.notifications.length);",
+                  "    ",
+                  "    pm.test('Todas están no leídas', () => {",
+                  "        response.notifications.forEach(n => {",
+                  "            pm.expect(n.leida).to.equal(false);",
+                  "        });",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notifications?leida=false&orderBy=fecha_creacion&orderDir=desc",
+              "host": ["{{base_url}}"],
+              "path": ["notifications"],
+              "query": [
+                {
+                  "key": "leida",
+                  "value": "false",
+                  "description": "Filtrar por estado: true o false"
+                },
+                {
+                  "key": "orderBy",
+                  "value": "fecha_creacion"
+                },
+                {
+                  "key": "orderDir",
+                  "value": "desc"
+                }
+              ]
+            },
+            "description": "Lista solo notificaciones no leídas, ordenadas por fecha (más recientes primero)."
+          },
+          "response": []
+        },
+        {
+          "name": "Filtrar por Rango de Fechas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    ",
+                  "    console.log('📅 Notificaciones en rango:', response.notifications.length);",
+                  "    ",
+                  "    response.notifications.forEach(n => {",
+                  "        console.log('  -', n.fecha_creacion, ':', n.titulo);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notifications?fecha_desde=2026-02-01&fecha_hasta=2026-02-18",
+              "host": ["{{base_url}}"],
+              "path": ["notifications"],
+              "query": [
+                {
+                  "key": "fecha_desde",
+                  "value": "2026-02-01",
+                  "description": "Fecha inicio (YYYY-MM-DD)"
+                },
+                {
+                  "key": "fecha_hasta",
+                  "value": "2026-02-18",
+                  "description": "Fecha fin (YYYY-MM-DD)"
+                }
+              ]
+            },
+            "description": "Filtra notificaciones entre dos fechas."
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints para listar y filtrar notificaciones."
+    },
+    {
+      "name": "2️⃣ Contar No Leídas",
+      "item": [
+        {
+          "name": "Contador de No Leídas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    ",
+                  "    console.log('🔔 Notificaciones no leídas:', response.unreadCount);",
+                  "    pm.environment.set('unread_count', response.unreadCount);",
+                  "    ",
+                  "    pm.test('Contador válido', () => {",
+                  "        pm.expect(response.unreadCount).to.be.a('number');",
+                  "        pm.expect(response.unreadCount).to.be.at.least(0);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notifications/unread-count",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "unread-count"]
+            },
+            "description": "Obtiene el número de notificaciones no leídas del usuario. Útil para mostrar badges en la UI."
+          },
+          "response": []
+        }
+      ],
+      "description": "Contador de notificaciones no leídas para badges en UI."
+    },
+    {
+      "name": "3️⃣ Marcar como Leída",
+      "item": [
+        {
+          "name": "Marcar Una Notificación",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    ",
+                  "    console.log('✅ Notificación marcada como leída');",
+                  "    console.log('📝 Título:', response.notification.titulo);",
+                  "    console.log('⏰ Leída en:', response.notification.fecha_leida);",
+                  "    ",
+                  "    pm.test('Marcada correctamente', () => {",
+                  "        pm.expect(response.notification.leida).to.equal(true);",
+                  "        pm.expect(response.notification.fecha_leida).to.not.be.null;",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notifications/{{sample_notification_id}}/mark-read",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "{{sample_notification_id}}", "mark-read"]
+            },
+            "description": "Marca una notificación específica como leída. El ID se obtiene automáticamente del primer request de listado."
+          },
+          "response": []
+        },
+        {
+          "name": "Marcar Todas como Leídas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    ",
+                  "    console.log('✅ Todas marcadas como leídas');",
+                  "    console.log('📊 Total:', response.count);",
+                  "    console.log('💬 Mensaje:', response.message);",
+                  "    ",
+                  "    pm.test('Operación exitosa', () => {",
+                  "        pm.expect(response.success).to.equal(true);",
+                  "        pm.expect(response.count).to.be.a('number');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{base_url}}/notifications/mark-all-read",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "mark-all-read"]
+            },
+            "description": "Marca TODAS las notificaciones no leídas del usuario como leídas. Útil para botón 'Marcar todas como leídas' en UI."
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints para marcar notificaciones como leídas."
+    },
+    {
+      "name": "4️⃣ Crear Notificación (Admin)",
+      "item": [
+        {
+          "name": "Crear Notificación",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    ",
+                  "    console.log('✅ Notificación creada exitosamente');",
+                  "    console.log('🆔 ID:', response.notification.id);",
+                  "    console.log('📝 Título:', response.notification.titulo);",
+                  "    console.log('👤 Destinatario:', response.notification.nuusuid);",
+                  "    ",
+                  "    pm.environment.set('new_notification_id', response.notification.id);",
+                  "    ",
+                  "    pm.test('Notificación creada correctamente', () => {",
+                  "        pm.expect(response.success).to.equal(true);",
+                  "        pm.expect(response.notification).to.be.an('object');",
+                  "        pm.expect(response.notification.id).to.be.a('string');",
+                  "        pm.expect(response.notification.tipo).to.be.a('string');",
+                  "    });",
+                  "} else if (pm.response.code === 400) {",
+                  "    const response = pm.response.json();",
+                  "    console.error('❌ Error de validación:', response.error);",
+                  "    pm.test('Error de validación esperado', () => {",
+                  "        pm.expect(response.error).to.be.a('string');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nuusuid\": \"{{nuusuid}}\",\n  \"tipo\": \"general\",\n  \"titulo\": \"Notificación de Prueba desde Postman\",\n  \"mensaje\": \"Esta es una notificación de prueba creada desde Postman para validar el endpoint de creación.\",\n  \"metadata\": {\n    \"origen\": \"postman\",\n    \"test\": true,\n    \"timestamp\": \"{{$timestamp}}\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/notifications/send",
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications", "send"]
+            },
+            "description": "Crea una nueva notificación para un usuario específico.\n\n**Validaciones automáticas:**\n- ✅ nuusuid existe en la BD\n- ✅ tipo es válido (autorizacion, credencial, general)\n- ✅ título no vacío (max 255 chars)\n- ✅ mensaje no vacío (max 5000 chars)\n- ✅ metadata es JSON válido (opcional)\n\n**Envío automático:**\n- 📱 Push notification si el usuario tiene dispositivos registrados\n- 💾 Persistencia en BD\n\n**Campos obligatorios:**\n- nuusuid (ID del destinatario)\n- tipo (autorizacion | credencial | general)\n- titulo (string, max 255)\n- mensaje (string, max 5000)\n\n**Campos opcionales:**\n- metadata (objeto JSON)"
+          },
+          "response": []
+        },
+        {
+          "name": "Crear Notificación (Autorización Aprobada)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('✅ Notificación de autorización creada');",
+                  "    console.log('🆔 ID:', response.notification.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nuusuid\": \"{{nuusuid}}\",\n  \"tipo\": \"autorizacion\",\n  \"titulo\": \"Autorización Aprobada\",\n  \"mensaje\": \"Tu solicitud de autorización #12345 para consulta médica ha sido aprobada exitosamente.\",\n  \"metadata\": {\n    \"autorizacionId\": 12345,\n    \"prestacion\": \"Consulta médica\",\n    \"estado\": \"APROBADA\",\n    \"fechaAprobacion\": \"{{$timestamp}}\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/notifications/send",
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications", "send"]
+            },
+            "description": "Ejemplo de notificación tipo 'autorizacion' con metadata enriquecida.\n\nEste es el formato típico que usaría GeneXus al aprobar una autorización."
+          },
+          "response": []
+        },
+        {
+          "name": "Crear Notificación (Credencial Vence)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('✅ Notificación de credencial creada');",
+                  "    console.log('🆔 ID:', response.notification.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nuusuid\": \"{{nuusuid}}\",\n  \"tipo\": \"credencial\",\n  \"titulo\": \"Credencial próxima a vencer\",\n  \"mensaje\": \"Tu credencial digital vence en 5 días. Actualízala desde la app para seguir usando los servicios.\",\n  \"metadata\": {\n    \"diasRestantes\": 5,\n    \"fechaVencimiento\": \"2026-02-23\",\n    \"accion\": \"renovar_credencial\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/notifications/send",
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications", "send"]
+            },
+            "description": "Ejemplo de notificación tipo 'credencial' para recordatorio de vencimiento.\n\nEste sería enviado automáticamente por un job programado diario."
+          },
+          "response": []
+        }
+      ],
+      "description": "Crear notificaciones vía REST API con validaciones automáticas y envío de push notifications."
+    },
+    {
+      "name": "🧪 Tests Completos",
+      "item": [
+        {
+          "name": "Test Suite Completo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test suite completo automatizado",
+                  "const baseUrl = pm.environment.get('base_url');",
+                  "const token = pm.environment.get('auth_token');",
+                  "",
+                  "if (!token) {",
+                  "    console.error('❌ No hay token. Ejecutar Login primero.');",
+                  "    pm.test('Token disponible', () => {",
+                  "        pm.expect.fail('Ejecutar Login primero');",
+                  "    });",
+                  "    return;",
+                  "}",
+                  "",
+                  "console.log('🧪 Ejecutando suite de tests...');",
+                  "",
+                  "// Test 1: Listar notificaciones",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/notifications?limit=5',",
+                  "    method: 'GET',",
+                  "    header: {",
+                  "        'Authorization': 'Bearer ' + token",
+                  "    }",
+                  "}, (err, res) => {",
+                  "    pm.test('✅ Test 1: Listar notificaciones', () => {",
+                  "        pm.expect(res.code).to.equal(200);",
+                  "        pm.expect(res.json().notifications).to.be.an('array');",
+                  "    });",
+                  "});",
+                  "",
+                  "// Test 2: Contar no leídas",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/notifications/unread-count',",
+                  "    method: 'GET',",
+                  "    header: {",
+                  "        'Authorization': 'Bearer ' + token",
+                  "    }",
+                  "}, (err, res) => {",
+                  "    pm.test('✅ Test 2: Contar no leídas', () => {",
+                  "        pm.expect(res.code).to.equal(200);",
+                  "        pm.expect(res.json().unreadCount).to.be.a('number');",
+                  "    });",
+                  "});",
+                  "",
+                  "// Test 3: Filtro por tipo",
+                  "pm.sendRequest({",
+                  "    url: baseUrl + '/notifications?tipo=autorizacion',",
+                  "    method: 'GET',",
+                  "    header: {",
+                  "        'Authorization': 'Bearer ' + token",
+                  "    }",
+                  "}, (err, res) => {",
+                  "    pm.test('✅ Test 3: Filtro por tipo', () => {",
+                  "        pm.expect(res.code).to.equal(200);",
+                  "        const notifs = res.json().notifications;",
+                  "        notifs.forEach(n => {",
+                  "            pm.expect(n.tipo).to.equal('autorizacion');",
+                  "        });",
+                  "    });",
+                  "});",
+                  "",
+                  "console.log('✅ Suite de tests completada');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notifications?limit=1",
+              "host": ["{{base_url}}"],
+              "path": ["notifications"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Ejecuta una suite completa de tests automáticamente. Ver resultados en la pestaña 'Test Results'."
+          },
+          "response": []
+        }
+      ],
+      "description": "Suite automatizada de tests para validación completa."
+    },
+    {
+      "name": "🔧 YAML + Basic Auth (GeneXus)",
+      "item": [
+        {
+          "name": "Enviar Notificación (YAML + Basic Auth)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    // Parsear respuesta YAML",
+                  "    const yaml = require('js-yaml');",
+                  "    const response = yaml.load(pm.response.text());",
+                  "    ",
+                  "    console.log('✅ Notificación creada con YAML');",
+                  "    console.log('🆔 ID:', response.notification.id);",
+                  "    console.log('📌 Tipo:', response.notification.tipo);",
+                  "    console.log('📝 Título:', response.notification.titulo);",
+                  "    ",
+                  "    pm.test('Notificación creada exitosamente', () => {",
+                  "        pm.expect(response.success).to.be.true;",
+                  "        pm.expect(response.notification).to.be.an('object');",
+                  "        pm.expect(response.notification.id).to.be.a('string');",
+                  "    });",
+                  "} else {",
+                  "    console.error('❌ Error:', pm.response.text());",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{test_username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{test_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/yaml"
+              },
+              {
+                "key": "Accept",
+                "value": "application/yaml"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "nuusuid: \"0000000000000000000000000000000000000025\"\ntipo: general\ntitulo: Test desde Postman (YAML)\nmensaje: Esta es una notificación de prueba enviada con formato YAML y Basic Auth\nmetadata:\n  test: true\n  source: postman\n  authType: BasicAuth"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/notifications/send",
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications", "send"]
+            },
+            "description": "Envía notificación usando YAML + Basic Auth (para integración con GeneXus). Usa las credenciales admin@test.local / admin123."
+          },
+          "response": []
+        },
+        {
+          "name": "Enviar Autorización Aprobada (YAML)",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{test_username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{test_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/yaml"
+              },
+              {
+                "key": "Accept",
+                "value": "application/yaml"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "nuusuid: \"0000000000000000000000000000000000000025\"\ntipo: autorizacion\ntitulo: Autorización Aprobada\nmensaje: Tu solicitud #12345 ha sido aprobada exitosamente.\nmetadata:\n  autorizacionId: 12345\n  prestacion: Consulta médica\n  estado: APROBADA"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/notifications/send",
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications", "send"]
+            },
+            "description": "Ejemplo de notificación de autorización aprobada en formato YAML."
+          },
+          "response": []
+        },
+        {
+          "name": "Enviar Credencial por Vencer (YAML)",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{test_username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{test_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/yaml"
+              },
+              {
+                "key": "Accept",
+                "value": "application/yaml"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "nuusuid: \"0000000000000000000000000000000000000025\"\ntipo: credencial\ntitulo: Credencial próxima a vencer\nmensaje: Tu credencial digital vence en 5 días. Actualízala desde la app.\nmetadata:\n  diasRestantes: 5\n  fechaVencimiento: 2026-02-24"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/notifications/send",
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications", "send"]
+            },
+            "description": "Ejemplo de notificación de credencial próxima a vencer en formato YAML."
+          },
+          "response": []
+        }
+      ],
+      "description": "Ejemplos de integración con YAML + Basic Auth para sistemas externos como GeneXus. Usa admin@test.local / admin123."
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{auth_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Script global que se ejecuta antes de cada request",
+          "const token = pm.environment.get('auth_token');",
+          "",
+          "if (!token && !pm.request.url.path.includes('login')) {",
+          "    console.warn('⚠️  No hay token guardado. Ejecutar Login primero.');",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Script global que se ejecuta después de cada request",
+          "const responseTime = pm.response.responseTime;",
+          "const statusCode = pm.response.code;",
+          "",
+          "console.log('⏱️  Tiempo de respuesta:', responseTime + 'ms');",
+          "console.log('📊 Status code:', statusCode);",
+          "",
+          "// Test global de tiempo de respuesta",
+          "pm.test('Tiempo de respuesta aceptable (< 2s)', () => {",
+          "    pm.expect(responseTime).to.be.below(2000);",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "test_username",
+      "value": "admin@test.local",
+      "type": "string"
+    },
+    {
+      "key": "test_password",
+      "value": "admin123",
+      "type": "string"
+    }
+  ]
+}

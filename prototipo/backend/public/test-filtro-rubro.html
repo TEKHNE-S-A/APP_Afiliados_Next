@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Filtro Rubro</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .result { margin: 10px 0; padding: 10px; background: #f0f0f0; }
+        .error { background: #fee; }
+    </style>
+</head>
+<body>
+    <h1>Test Filtro Rubro - Frontend</h1>
+    
+    <div>
+        <label>Rubro:</label>
+        <select id="filterRubro">
+            <option value="">Todos</option>
+        </select>
+    </div>
+    
+    <button onclick="testFiltro()">Probar Filtro</button>
+    <button onclick="testFiltroTrimmed()">Probar Filtro (con TRIM)</button>
+    
+    <div id="results"></div>
+    
+    <script>
+        let token = '';
+        
+        async function init() {
+            // Login
+            const loginResp = await fetch('/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: 'admin', password: 'admin123' })
+            });
+            const loginData = await loginResp.json();
+            token = loginData.token;
+            
+            // Cargar rubros
+            const rubrosResp = await fetch('/admin/cartilla/rubros', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const rubros = await rubrosResp.json();
+            
+            const select = document.getElementById('filterRubro');
+            rubros.forEach(r => {
+                const option = document.createElement('option');
+                option.value = r.carubid;
+                option.textContent = `${r.carubdescr} (len: ${r.carubid.length})`;
+                select.appendChild(option);
+            });
+            
+            log('✅ Iniciado - Rubros cargados');
+        }
+        
+        async function testFiltro() {
+            const rubroId = document.getElementById('filterRubro').value;
+            if (!rubroId) {
+                log('⚠️  Selecciona un rubro primero');
+                return;
+            }
+            
+            log(`\n🔍 Probando filtro con valor: "${rubroId}" (length: ${rubroId.length})`);
+            
+            const url = `/admin/cartilla/entidades?rubroId=${encodeURIComponent(rubroId)}&limit=10`;
+            log(`URL: ${url}`);
+            
+            const response = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            const data = await response.json();
+            log(`✅ Respuesta: ${data.data.length} entidades encontradas`);
+        }
+        
+        async function testFiltroTrimmed() {
+            const rubroId = document.getElementById('filterRubro').value;
+            if (!rubroId) {
+                log('⚠️  Selecciona un rubro primero');
+                return;
+            }
+            
+            const trimmed = rubroId.trim();
+            log(`\n🔍 Probando filtro con TRIM: "${trimmed}" (length: ${trimmed.length})`);
+            
+            const url = `/admin/cartilla/entidades?rubroId=${encodeURIComponent(trimmed)}&limit=10`;
+            log(`URL: ${url}`);
+            
+            const response = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            const data = await response.json();
+            log(`✅ Respuesta: ${data.data.length} entidades encontradas`);
+        }
+        
+        function log(msg, isError = false) {
+            const div = document.createElement('div');
+            div.className = 'result' + (isError ? ' error' : '');
+            div.textContent = msg;
+            document.getElementById('results').appendChild(div);
+        }
+        
+        init();
+    </script>
+</body>
+</html>

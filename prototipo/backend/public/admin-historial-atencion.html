@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Historial de Atención — Admin</title>
+  <link rel="stylesheet" href="/admin-shared.css" />
+  <script src="/admin-nav.js"></script>
+  <script src="/admin-shared.js"></script>
+  <style>
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    /* ── Login ── */
+    .login-container {
+      max-width: 400px; margin: 100px auto;
+      background: white; padding: 40px;
+      border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    .login-container h1 { color: #333; text-align: center; margin-bottom: 10px; }
+    .login-container p  { color: #666; text-align: center; margin-bottom: 30px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; margin-bottom: 6px; font-weight: 500; color: #333; }
+    .form-group input, .form-group select {
+      width: 100%; padding: 10px 12px;
+      border: 2px solid #e0e0e0; border-radius: 8px;
+      font-size: 14px; transition: border 0.2s; box-sizing: border-box;
+    }
+    .form-group input:focus, .form-group select:focus {
+      outline: none; border-color: #667eea;
+    }
+    .btn {
+      padding: 10px 20px; border: none; border-radius: 8px;
+      font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s;
+    }
+    .btn-primary { background: #667eea; color: white; }
+    .btn-primary:hover { background: #5568d3; }
+    .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    .btn-block { width: 100%; }
+    .btn-link { background: none; color: #667eea; padding: 4px 8px; text-decoration: underline; cursor: pointer; border: none; font-size: 13px; }
+
+    /* ── App ── */
+    .app-container { display: none; }
+
+    /* ── Stats bar ── */
+    .stats-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .stat-card {
+      background: white; border-radius: 10px;
+      padding: 14px 20px; min-width: 110px; text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .stat-card .num { font-size: 26px; font-weight: 700; color: #667eea; }
+    .stat-card .lbl { font-size: 11px; color: #666; margin-top: 2px; }
+
+    /* ── Tabs ── */
+    .tabs { display: flex; gap: 4px; margin-bottom: 20px; }
+    .tab-btn {
+      padding: 10px 24px; border: none; border-radius: 8px 8px 0 0;
+      font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+      background: #e9ecef; color: #666;
+    }
+    .tab-btn.active { background: #667eea; color: white; }
+    .tab-btn:hover:not(.active) { background: #dee2e6; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      background: white; border-radius: 10px; padding: 14px 18px;
+      margin-bottom: 16px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .toolbar input, .toolbar select {
+      padding: 8px 12px; border: 1.5px solid #e0e0e0; border-radius: 8px;
+      font-size: 13px; min-width: 160px;
+    }
+    .toolbar input:focus, .toolbar select:focus { outline: none; border-color: #667eea; }
+    .spacer { flex: 1; }
+
+    /* ── Tabla ── */
+    .table-wrap {
+      background: white; border-radius: 10px; overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      background: #f8f9fa; padding: 12px 14px;
+      text-align: left; font-weight: 600; color: #555;
+      border-bottom: 2px solid #e9ecef; white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid #f0f0f0; }
+    tbody tr:hover { background: #fafbff; }
+    tbody td { padding: 11px 14px; vertical-align: middle; color: #333; }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-block;
+      font-size: 11px; font-weight: 600; padding: 3px 9px;
+      border-radius: 20px; white-space: nowrap;
+    }
+    .badge-pendiente    { background: #fff3cd; color: #856404; }
+    .badge-en_revision  { background: #cfe2ff; color: #0a58ca; }
+    .badge-resuelto     { background: #d1e7dd; color: #146c43; }
+    .badge-cerrado      { background: #e2e3e5; color: #41464b; }
+    .badge-motivo       { background: #f3e8ff; color: #6f42c1; }
+
+    /* ── Estrellas ── */
+    .stars { color: #f0b429; font-size: 15px; letter-spacing: 1px; }
+    .stars-gray { color: #ddd; }
+
+    /* ── Distribución estrellas ── */
+    .star-dist { background: white; border-radius: 10px; padding: 18px 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .star-dist h3 { font-size: 14px; color: #555; margin: 0 0 12px; }
+    .star-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .star-label { font-size: 13px; color: #f0b429; width: 60px; flex-shrink: 0; }
+    .star-bar-wrap { flex: 1; background: #f0f0f0; border-radius: 4px; height: 14px; overflow: hidden; }
+    .star-bar { height: 100%; background: #f0b429; border-radius: 4px; transition: width 0.4s; width: var(--star-bar-width, 0%); }
+    .star-count { font-size: 13px; color: #777; width: 30px; text-align: right; flex-shrink: 0; }
+    .avg-big { font-size: 36px; font-weight: 800; color: #f0b429; }
+    .avg-row { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+    .avg-of { font-size: 13px; color: #999; }
+
+    /* ── Paginación ── */
+    .pagination { display: flex; align-items: center; gap: 8px; padding: 14px 18px; justify-content: flex-end; }
+    .page-info { font-size: 13px; color: #777; flex: 1; }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5); z-index: 1000;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: white; border-radius: 12px; padding: 28px;
+      width: 90%; max-width: 460px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .modal-box h3 { font-size: 17px; color: #333; margin-bottom: 20px; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+    .modal-info { font-size: 13px; color: #555; margin-bottom: 16px; line-height: 1.6; }
+    .modal-info strong { color: #333; }
+
+    /* ── Detalle expandible ── */
+    .desc-text { font-size: 12px; color: #777; margin-top: 4px; font-style: italic; }
+    .comentario-text { font-size: 12px; color: #666; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ── Empty / loading ── */
+    .empty-state {
+      padding: 50px; text-align: center;
+    }
+    .empty-state .icon { font-size: 44px; margin-bottom: 10px; }
+    .empty-state p { color: #888; font-size: 14px; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: #333; color: white;
+      padding: 12px 20px; border-radius: 8px;
+      font-size: 14px; opacity: 0; transition: opacity 0.3s;
+      z-index: 2000; pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+    .toast.error   { background: #e53e3e; }
+    .toast.success { background: #38a169; }
+    .login-error { color:#e53e3e; text-align:center; margin-top:12px; display:none; }
+    .num-pend { color:#e08c00; }
+    .num-revision { color:#0a58ca; }
+    .num-prom { color:#f0b429; }
+    .input-disabled-muted { background:#f5f5f5; color:#888; }
+    .cell-id { color:#999; font-size:12px; }
+    .cell-user-main { font-weight:500; }
+    .cell-user-sub { font-size:11px; color:#888; }
+    .cell-mono-sm { font-size:12px; font-family:monospace; }
+    .cell-subtle { font-size:11px; color:#aaa; }
+    .cell-date { font-size:12px; color:#888; white-space:nowrap; }
+    .btn-edit-soft { background:#ebf4ff; color:#3182ce; }
+    .comment-empty { color:#bbb; font-size:12px; }
+  </style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+
+<!-- ══ LOGIN ════════════════════════════════════════════════════════════ -->
+<div id="loginScreen" class="login-container">
+  <h1>🌿 Panel Admin</h1>
+  <p>Gestión de Historial de Atención</p>
+  <div class="form-group">
+    <label>Email</label>
+    <input type="email" id="loginEmail" placeholder="admin@osep.gob.ar" />
+  </div>
+  <div class="form-group">
+    <label>Contraseña</label>
+    <input type="password" id="loginPassword" placeholder="••••••" />
+  </div>
+  <button class="btn btn-primary btn-block" id="loginBtn" onclick="doLogin()">Ingresar</button>
+  <p id="loginError" class="login-error"></p>
+</div>
+
+<!-- ══ APP ═══════════════════════════════════════════════════════════════ -->
+<div class="app-container container" id="appScreen">
+  <header>
+    <div class="header-top">
+      <h1>🏥 Historial de Atención</h1>
+      <div class="header-actions">
+        <div class="user-info"><span id="userInfo">👤 Admin</span></div>
+        <nav aria-label="Navegación principal" class="nav-links">
+          <a href="/admin">Parámetros</a>
+          <a href="/admin/usuarios">Usuarios</a>
+          <a href="/admin/noticias-ui">Noticias</a>
+          <a href="/admin/planes-ui">Planes</a>
+          <a href="/admin/historial-atencion-ui" class="active-nav">Historial</a>
+        </nav>
+        <button class="btn btn-danger btn-sm" onclick="adminLogout('/admin')">Cerrar sesión</button>
+      </div>
+    </div>
+  </header>
+  <nav id="adminBreadcrumb" class="admin-breadcrumb" aria-label="Migas de pan"></nav>
+
+  <main id="main-content">
+
+  <!-- Stats bar -->
+  <div class="stats-bar" id="statsBar">
+    <div class="stat-card"><div class="num" id="statDescTotal">—</div><div class="lbl">Desconocimientos</div></div>
+    <div class="stat-card"><div class="num num-pend" id="statDescPend">—</div><div class="lbl">Pendientes</div></div>
+    <div class="stat-card"><div class="num num-revision" id="statDescRevision">—</div><div class="lbl">En revisión</div></div>
+    <div class="stat-card"><div class="num" id="statCalifTotal">—</div><div class="lbl">Calificaciones</div></div>
+    <div class="stat-card"><div class="num num-prom" id="statCalifProm">—</div><div class="lbl">Promedio ★</div></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" id="tabBtnDesc" onclick="switchTab('desc')">🚨 Desconocimientos</button>
+    <button class="tab-btn" id="tabBtnCalif" onclick="switchTab('calif')">⭐ Calificaciones</button>
+  </div>
+
+  <!-- ══ Tab: Desconocimientos ══ -->
+  <div class="tab-panel active" id="tabDesc">
+    <div class="toolbar">
+      <input type="text" id="descSearch" placeholder="🔍 Buscar afiliado, prestador…" oninput="debounceLoadDesc()" />
+      <select id="descEstado" onchange="loadDesc(1)">
+        <option value="">Todos los estados</option>
+        <option value="pendiente">Pendiente</option>
+        <option value="en_revision">En revisión</option>
+        <option value="resuelto">Resuelto</option>
+        <option value="cerrado">Cerrado</option>
+      </select>
+      <span class="spacer"></span>
+      <button class="btn btn-sm btn-neutral" onclick="loadDesc(1)">🔄 Actualizar</button>
+    </div>
+
+    <div class="table-wrap" id="descTableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Afiliado</th>
+            <th scope="col">Prestador</th>
+            <th scope="col">Autorización</th>
+            <th scope="col">Motivo</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Fecha</th>
+            <th scope="col">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="descTableBody">
+          <tr><td colspan="8"><div class="empty-state"><div class="icon">⏳</div><p>Cargando...</p></div></td></tr>
+        </tbody>
+      </table>
+      <div class="pagination hidden" id="descPagination">
+        <span class="page-info" id="descPageInfo"></span>
+        <button class="btn btn-sm btn-neutral" id="descPrevBtn" onclick="loadDesc(descPage - 1)">‹ Anterior</button>
+        <button class="btn btn-sm btn-neutral" id="descNextBtn" onclick="loadDesc(descPage + 1)">Siguiente ›</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Tab: Calificaciones ══ -->
+  <div class="tab-panel" id="tabCalif">
+    <!-- Resumen distribución estrellas -->
+    <div class="star-dist hidden" id="starDist">
+      <div class="avg-row">
+        <div>
+          <div class="avg-big" id="califAvgBig">—</div>
+          <div class="avg-of">sobre 5 estrellas</div>
+        </div>
+        <div class="grow-1" id="starBars"></div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <input type="text" id="califSearch" placeholder="🔍 Buscar afiliado, entidad…" oninput="debounceLoadCalif()" />
+      <select id="califPuntuacion" onchange="loadCalif(1)">
+        <option value="">Todas las estrellas</option>
+        <option value="5">★★★★★ (5)</option>
+        <option value="4">★★★★☆ (4)</option>
+        <option value="3">★★★☆☆ (3)</option>
+        <option value="2">★★☆☆☆ (2)</option>
+        <option value="1">★☆☆☆☆ (1)</option>
+      </select>
+      <span class="spacer"></span>
+      <button class="btn btn-sm btn-neutral" onclick="loadCalif(1)">🔄 Actualizar</button>
+    </div>
+
+    <div class="table-wrap" id="califTableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Afiliado</th>
+            <th scope="col">Entidad / Prestador</th>
+            <th scope="col">Autorización</th>
+            <th scope="col" class="th-center">Puntuación</th>
+            <th scope="col">Comentario</th>
+            <th scope="col">Fecha</th>
+          </tr>
+        </thead>
+        <tbody id="califTableBody">
+          <tr><td colspan="7"><div class="empty-state"><div class="icon">⏳</div><p>Cargando...</p></div></td></tr>
+        </tbody>
+      </table>
+      <div class="pagination hidden" id="califPagination">
+        <span class="page-info" id="califPageInfo"></span>
+        <button class="btn btn-sm btn-neutral" id="califPrevBtn" onclick="loadCalif(califPage - 1)">‹ Anterior</button>
+        <button class="btn btn-sm btn-neutral" id="califNextBtn" onclick="loadCalif(califPage + 1)">Siguiente ›</button>
+      </div>
+    </div>
+  </div>
+  </main>
+  <footer role="contentinfo">
+    <p class="admin-footer-text">Admin OSEP &nbsp;&middot;&nbsp; Historial de Atención</p>
+  </footer>
+</div>
+
+<!-- ══ MODAL CAMBIAR ESTADO ══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="estadoModal" onclick="handleModalClick(event)">
+  <div class="modal-box">
+    <h3>Cambiar estado del desconocimiento</h3>
+    <input type="hidden" id="modalDescId" />
+    <div class="modal-info" id="modalDescInfo"></div>
+    <div class="form-group">
+      <label>Estado actual</label>
+      <input type="text" id="modalEstadoActual" class="input-disabled-muted" disabled />
+    </div>
+    <div class="form-group">
+      <label>Nuevo estado *</label>
+      <select id="modalEstadoNuevo">
+        <option value="">— Seleccioná —</option>
+        <option value="pendiente">Pendiente</option>
+        <option value="en_revision">En revisión</option>
+        <option value="resuelto">Resuelto</option>
+        <option value="cerrado">Cerrado</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-neutral" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" id="saveEstadoBtn" onclick="saveEstado()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── Estado local ───────────────────────────────────────────────────────────
+  let descPage = 1
+  let descTotal = 0
+  let califPage = 1
+  let califTotal = 0
+  const LIMIT = 20
+  let descDebounce = null
+  let califDebounce = null
+  let resumenData = {}
+
+  // ── Auth ───────────────────────────────────────────────────────────────────
+  async function doLogin() {
+    const email = document.getElementById('loginEmail').value.trim()
+    const pass  = document.getElementById('loginPassword').value
+    const btn   = document.getElementById('loginBtn')
+    const err   = document.getElementById('loginError')
+    if (!email || !pass) { showErr(err, 'Completá los campos'); return }
+    btn.disabled = true; btn.textContent = 'Ingresando...'
+    err.style.display = 'none'
+    try {
+      const r = await fetch('/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: email, password: pass })
+      })
+      const data = await r.json()
+      if (!r.ok || !data.token) throw new Error(data.message || 'Credenciales incorrectas')
+      AdminSession.set(data.token, data.user?.email || email)
+      document.getElementById('loginScreen').style.display = 'none'
+      document.getElementById('appScreen').style.display = 'block'
+      initData()
+    } catch(e) {
+      showErr(err, e.message)
+    } finally {
+      btn.disabled = false; btn.textContent = 'Ingresar'
+    }
+  }
+  function showErr(el, msg) { el.textContent = msg; el.style.display = 'block' }
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin() })
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+  window.addEventListener('DOMContentLoaded', () => {
+    initAdminPanelAuth({
+      loginId: 'loginScreen',
+      appId: 'appScreen',
+      userInfoId: 'userInfo',
+      onReady: () => initData()
+    })
+  })
+
+  async function initData() {
+    await Promise.all([
+      loadStats(),
+      loadDesc(1),
+      loadCalif(1),
+      loadResumen()
+    ])
+  }
+
+  // ── Stats globales ─────────────────────────────────────────────────────────
+  async function loadStats() {
+    try {
+      // Desconocimientos: cargar resumen por estado
+      const [rDesc, rCalif] = await Promise.all([
+        adminAuthFetch('/admin/desconocimientos?limit=1&page=1'),
+        adminAuthFetch('/admin/calificaciones/resumen')
+      ])
+
+      // Contar por estado desconocimientos (cargamos todos con limit alto)
+      const rAll = await adminAuthFetch('/admin/desconocimientos?limit=100&page=1')
+      const items = rAll.items || []
+      const pend = items.filter(x => x.estado === 'pendiente').length
+      const rev  = items.filter(x => x.estado === 'en_revision').length
+
+      document.getElementById('statDescTotal').textContent = rDesc.pagination?.total ?? 0
+      document.getElementById('statDescPend').textContent = pend
+      document.getElementById('statDescRevision').textContent = rev
+
+      const res = rCalif.resumen || {}
+      document.getElementById('statCalifTotal').textContent = res.total ?? 0
+      document.getElementById('statCalifProm').textContent  = res.promedio != null ? Number(res.promedio).toFixed(1) : '—'
+    } catch(e) {
+      if (e.message !== 'UNAUTHORIZED') console.warn('loadStats:', e.message)
+    }
+  }
+
+  // ── Desconocimientos ───────────────────────────────────────────────────────
+  function debounceLoadDesc() {
+    clearTimeout(descDebounce)
+    descDebounce = setTimeout(() => loadDesc(1), 400)
+  }
+
+  async function loadDesc(page) {
+    descPage = page
+    const q      = document.getElementById('descSearch').value.trim()
+    const estado = document.getElementById('descEstado').value
+    const params = new URLSearchParams({ page, limit: LIMIT })
+    if (q)      params.set('q', q)
+    if (estado) params.set('estado', estado)
+
+    const body = document.getElementById('descTableBody')
+    body.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="icon">⏳</div><p>Cargando...</p></div></td></tr>'
+
+    try {
+      const data = await adminAuthFetch(`/admin/desconocimientos?${params}`)
+      const items = data.items || []
+      descTotal = data.pagination?.total || 0
+
+      if (!items.length) {
+        body.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="icon">🔍</div><p>Sin resultados</p></div></td></tr>'
+      } else {
+        body.innerHTML = items.map(d => descRow(d)).join('')
+      }
+
+      renderPagination('desc', descPage, descTotal)
+    } catch(e) {
+      if (e.message !== 'UNAUTHORIZED') {
+        body.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="icon">⚠️</div><p>${e.message}</p></div></td></tr>`
+      }
+    }
+  }
+
+  function descRow(d) {
+    const motivoMap = { no_reconozco: 'No reconozco', incorrecto: 'Dato incorrecto', duplicado: 'Duplicado', otro: 'Otro' }
+    const motivo = motivoMap[d.motivo] || d.motivo || '—'
+    const desc = d.descripcion ? `<div class="desc-text" title="${escHtml(d.descripcion)}">${escHtml(d.descripcion.substring(0, 60))}${d.descripcion.length > 60 ? '…' : ''}</div>` : ''
+    return `
+      <tr>
+        <td class="cell-id">#${d.id}</td>
+        <td>
+          <div class="cell-user-main">${escHtml(d.usuario_email || d.nuusuid || '—')}</div>
+          <div class="cell-user-sub">${escHtml(d.usuario_nombre || '')}</div>
+        </td>
+        <td>${escHtml(d.prestador_nombre || '—')}</td>
+        <td>
+          <div class="cell-mono-sm">${escHtml(d.nro_autorizacion || '—')}</div>
+          <div class="cell-subtle">${escHtml(d.nro_delegacion || '')}</div>
+        </td>
+        <td><span class="badge badge-motivo">${escHtml(motivo)}</span>${desc}</td>
+        <td>${estadoBadge(d.estado)}</td>
+        <td class="cell-date">${fmtDate(d.created_at)}</td>
+        <td>
+          <button class="btn btn-sm btn-edit-soft" onclick="openEstadoModal(${d.id})">
+            ✏️ Estado
+          </button>
+        </td>
+      </tr>`
+  }
+
+  function estadoBadge(estado) {
+    const map = { pendiente: 'badge-pendiente', en_revision: 'badge-en_revision', resuelto: 'badge-resuelto', cerrado: 'badge-cerrado' }
+    const labMap = { pendiente: 'Pendiente', en_revision: 'En revisión', resuelto: 'Resuelto', cerrado: 'Cerrado' }
+    return `<span class="badge ${map[estado] || ''}">${labMap[estado] || estado}</span>`
+  }
+
+  // ── Calificaciones ─────────────────────────────────────────────────────────
+  function debounceLoadCalif() {
+    clearTimeout(califDebounce)
+    califDebounce = setTimeout(() => loadCalif(1), 400)
+  }
+
+  async function loadResumen() {
+    try {
+      const data = await adminAuthFetch('/admin/calificaciones/resumen')
+      resumenData = data.resumen || {}
+      renderStarDist()
+    } catch(e) {
+      if (e.message !== 'UNAUTHORIZED') console.warn('loadResumen:', e.message)
+    }
+  }
+
+  function renderStarDist() {
+    const r = resumenData
+    if (!r.total) return
+    document.getElementById('starDist').style.display = 'block'
+    document.getElementById('califAvgBig').textContent = r.promedio != null ? Number(r.promedio).toFixed(1) : '—'
+    const barsEl = document.getElementById('starBars')
+    const max = Math.max(r.estrellas_1, r.estrellas_2, r.estrellas_3, r.estrellas_4, r.estrellas_5, 1)
+    barsEl.innerHTML = [5,4,3,2,1].map(n => {
+      const count = r[`estrellas_${n}`] || 0
+      const pct = Math.round((count / max) * 100)
+      return `<div class="star-row">
+        <span class="star-label">${'★'.repeat(n)}</span>
+        <div class="star-bar-wrap"><div class="star-bar" data-width="${pct}"></div></div>
+        <span class="star-count">${count}</span>
+      </div>`
+    }).join('')
+    barsEl.querySelectorAll('.star-bar').forEach((bar) => {
+      bar.style.setProperty('--star-bar-width', `${bar.dataset.width}%`)
+    })
+  }
+
+  async function loadCalif(page) {
+    califPage = page
+    const q         = document.getElementById('califSearch').value.trim()
+    const puntuacion = document.getElementById('califPuntuacion').value
+    const params    = new URLSearchParams({ page, limit: LIMIT })
+    if (q)          params.set('q', q)
+    if (puntuacion) params.set('puntuacion', puntuacion)
+
+    const body = document.getElementById('califTableBody')
+    body.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="icon">⏳</div><p>Cargando...</p></div></td></tr>'
+
+    try {
+      const data = await adminAuthFetch(`/admin/calificaciones?${params}`)
+      const items = data.items || []
+      califTotal = data.pagination?.total || 0
+
+      if (!items.length) {
+        body.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="icon">🔍</div><p>Sin resultados</p></div></td></tr>'
+      } else {
+        body.innerHTML = items.map(c => califRow(c)).join('')
+      }
+
+      renderPagination('calif', califPage, califTotal)
+    } catch(e) {
+      if (e.message !== 'UNAUTHORIZED') {
+        body.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="icon">⚠️</div><p>${e.message}</p></div></td></tr>`
+      }
+    }
+  }
+
+  function califRow(c) {
+    const starsHtml = starsDisplay(c.puntuacion)
+    const comentario = c.comentario
+      ? `<div class="comentario-text" title="${escHtml(c.comentario)}">${escHtml(c.comentario)}</div>`
+      : '<span class="comment-empty">Sin comentario</span>'
+    return `
+      <tr>
+        <td class="cell-id">#${c.id}</td>
+        <td>
+          <div class="cell-user-main">${escHtml(c.usuario_email || c.nuusuid || '—')}</div>
+          <div class="cell-user-sub">${escHtml(c.usuario_nombre || '')}</div>
+        </td>
+        <td>${escHtml(c.entidad_nombre || '—')}</td>
+        <td class="cell-mono-sm">${escHtml(c.atencion_id || '—')}</td>
+        <td class="td-center">${starsHtml}</td>
+        <td>${comentario}</td>
+        <td class="cell-date">${fmtDate(c.created_at)}</td>
+      </tr>`
+  }
+
+  function starsDisplay(n) {
+    const filled = '★'.repeat(n)
+    const empty  = '☆'.repeat(5 - n)
+    return `<span class="stars">${filled}</span><span class="stars-gray">${empty}</span>`
+  }
+
+  // ── Paginación ─────────────────────────────────────────────────────────────
+  function renderPagination(which, page, total) {
+    const pages = Math.ceil(total / LIMIT)
+    const pagEl = document.getElementById(`${which}Pagination`)
+    const infoEl = document.getElementById(`${which}PageInfo`)
+    const prevEl = document.getElementById(`${which}PrevBtn`)
+    const nextEl = document.getElementById(`${which}NextBtn`)
+
+    if (total === 0) { pagEl.classList.add('hidden'); return }
+    pagEl.classList.remove('hidden')
+    const from = (page - 1) * LIMIT + 1
+    const to   = Math.min(page * LIMIT, total)
+    infoEl.textContent = `Mostrando ${from}–${to} de ${total}`
+    prevEl.disabled = page <= 1
+    nextEl.disabled = page >= pages
+  }
+
+  // ── Tabs ───────────────────────────────────────────────────────────────────
+  function switchTab(tab) {
+    document.getElementById('tabDesc').classList.toggle('active', tab === 'desc')
+    document.getElementById('tabCalif').classList.toggle('active', tab === 'calif')
+    document.getElementById('tabBtnDesc').classList.toggle('active', tab === 'desc')
+    document.getElementById('tabBtnCalif').classList.toggle('active', tab === 'calif')
+  }
+
+  // ── Modal estado ───────────────────────────────────────────────────────────
+  let _descItemCache = {}
+
+  async function openEstadoModal(id) {
+    // Buscar en la lista cargada
+    try {
+      const q      = document.getElementById('descSearch').value.trim()
+      const estado = document.getElementById('descEstado').value
+      const params = new URLSearchParams({ page: descPage, limit: LIMIT })
+      if (q) params.set('q', q)
+      if (estado) params.set('estado', estado)
+      const data = await adminAuthFetch(`/admin/desconocimientos?${params}`)
+      const item = (data.items || []).find(x => x.id === id)
+      if (item) _descItemCache = item
+    } catch(e) { /* usa cache previo si falla */ }
+
+    const d = _descItemCache
+    document.getElementById('modalDescId').value = id
+    document.getElementById('modalEstadoActual').value = d.estado || '—'
+    document.getElementById('modalEstadoNuevo').value  = ''
+
+    const motivoMap = { no_reconozco: 'No reconozco', incorrecto: 'Dato incorrecto', duplicado: 'Duplicado', otro: 'Otro' }
+    document.getElementById('modalDescInfo').innerHTML = `
+      <strong>Afiliado:</strong> ${escHtml(d.usuario_email || d.nuusuid || id)}<br>
+      <strong>Prestador:</strong> ${escHtml(d.prestador_nombre || '—')}<br>
+      <strong>Motivo:</strong> ${escHtml(motivoMap[d.motivo] || d.motivo || '—')}<br>
+      ${d.descripcion ? `<strong>Descripción:</strong> ${escHtml(d.descripcion)}` : ''}
+    `
+    document.getElementById('estadoModal').classList.add('open')
+  }
+
+  function closeModal() {
+    document.getElementById('estadoModal').classList.remove('open')
+  }
+
+  function handleModalClick(e) {
+    if (e.target === document.getElementById('estadoModal')) closeModal()
+  }
+
+  async function saveEstado() {
+    const id     = document.getElementById('modalDescId').value
+    const estado = document.getElementById('modalEstadoNuevo').value
+    if (!estado) { showToast('Seleccioná un nuevo estado', 'error'); return }
+
+    const btn = document.getElementById('saveEstadoBtn')
+    btn.disabled = true; btn.textContent = 'Guardando...'
+
+    try {
+      await adminAuthFetch(`/admin/desconocimientos/${id}/estado`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado })
+      })
+      closeModal()
+      showToast('Estado actualizado ✓', 'success')
+      loadDesc(descPage)
+      loadStats()
+    } catch(e) {
+      if (e.message !== 'UNAUTHORIZED') showToast('Error: ' + e.message, 'error')
+    } finally {
+      btn.disabled = false; btn.textContent = 'Guardar'
+    }
+  }
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+  function showToast(msg, type = '') {
+    const t = document.getElementById('toast')
+    t.textContent = msg
+    t.className = 'toast show' + (type ? ' ' + type : '')
+    setTimeout(() => t.classList.remove('show'), 3000)
+  }
+
+  function escHtml(s) {
+    return (s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]))
+  }
+
+  function fmtDate(s) {
+    if (!s) return '—'
+    return new Date(s).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' })
+  }
+</script>
+</body>
+</html>
