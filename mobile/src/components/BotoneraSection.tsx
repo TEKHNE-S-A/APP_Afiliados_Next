@@ -163,8 +163,8 @@ function BotoneraItem({ btn, onPress, colors }: ItemProps) {
               gradientUnits="userSpaceOnUse"
               gradientTransform="translate(72 47.5) rotate(139.787) scale(72.0226 86.4271)"
             >
-              <Stop offset="0" stopColor="#5576B8" stopOpacity="0.5" />
-              <Stop offset="1" stopColor="#004B8D" />
+              <Stop offset="0" stopColor={colors.primary} stopOpacity="0.5" />
+              <Stop offset="1" stopColor={colors.primaryDark} />
             </RadialGradient>
             <LinearGradient
               id={gradIdStroke}
@@ -175,7 +175,7 @@ function BotoneraItem({ btn, onPress, colors }: ItemProps) {
               gradientUnits="userSpaceOnUse"
             >
               <Stop offset="0.467885" stopColor="#FFFFFF" />
-              <Stop offset="0.556495" stopColor="#3773A8" />
+              <Stop offset="0.556495" stopColor={colors.primary} />
               <Stop offset="0.67037" stopColor="#FFFFFF" />
             </LinearGradient>
           </Defs>

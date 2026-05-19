@@ -296,7 +296,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (isNetworkError(err)) {
               console.log('🔒 Sesión persistente offline: sin conexión, usando cache')
-            } else if (errMsg.includes('401')) {
+            } else if (errMsg.includes('401') || errMsg.toLowerCase().includes('token inválido') || errMsg.toLowerCase().includes('sesión ha expirado') || errMsg.includes('UNAUTHORIZED')) {
               console.log('🔒 Sesión persistente offline: token expirado pero cache disponible')
 
               setRequiresRelogin(true)
@@ -392,7 +392,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // Error de red real → mantener modo offline
             console.log('📡 Error de red - mantener modo offline')
             setIsOfflineMode(true)
-          } else if (errMsg.includes('401')) {
+          } else if (errMsg.includes('401') || errMsg.toLowerCase().includes('token inválido') || errMsg.toLowerCase().includes('sesión ha expirado') || errMsg.includes('UNAUTHORIZED')) {
             // Token rechazado con conexión: mantener cache, pero invalidar token para evitar loops
             console.log('❌ Token inválido/expirado - se invalida token, cache queda disponible')
             await clearAuthTokenKeepCache()
@@ -890,7 +890,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // NO activar modo offline si hay conexión
         console.log('Error al refrescar credenciales:', e)
         const errMsg = (e && typeof e === 'object' && 'message' in e) ? String(e.message) : ''
-        if (errMsg.includes('401')) {
+        if (errMsg.includes('401') || errMsg.toLowerCase().includes('token inválido') || errMsg.toLowerCase().includes('sesión ha expirado') || errMsg.includes('UNAUTHORIZED')) {
           console.log('⚠️  Token inválido - requiere re-login')
           await clearAuthTokenKeepCache()
           setRequiresRelogin(true)
@@ -1018,7 +1018,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // NO activar modo offline si hay conexión
         console.error('Error al sincronizar credenciales:', e)
         const errMsg = (e && typeof e === 'object' && 'message' in e) ? String(e.message) : ''
-        if (errMsg.includes('401')) {
+        if (errMsg.includes('401') || errMsg.toLowerCase().includes('token inválido') || errMsg.toLowerCase().includes('sesión ha expirado') || errMsg.includes('UNAUTHORIZED')) {
           console.log('⚠️  Token inválido - requiere re-login')
           await clearAuthTokenKeepCache()
           setRequiresRelogin(true)

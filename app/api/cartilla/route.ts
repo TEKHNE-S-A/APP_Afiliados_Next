@@ -1,10 +1,14 @@
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { fail, ok, parsePagination } from '@/lib/api-response'
+import { requireMobileAuth } from '@/lib/require-mobile-auth'
 
 export async function GET(req: Request) {
-  const session = await auth()
-  if (!session) return fail(401, 'UNAUTHORIZED', 'Sesion requerida')
+  const bearer = await requireMobileAuth(req)
+  if (bearer.error) {
+    const session = await auth()
+    if (!session) return fail(401, 'UNAUTHORIZED', 'Sesion requerida')
+  }
 
   const url = new URL(req.url)
   const { take, skip } = parsePagination(url, { take: 20, maxTake: 100 })

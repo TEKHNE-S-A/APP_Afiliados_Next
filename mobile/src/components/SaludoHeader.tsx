@@ -24,14 +24,13 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { ds } from '../theme/ds'
+import { useTheme } from '../theme'
 
 // ─── Constantes Figma ─────────────────────────────────────────────────────────
 
-const AVATAR_SIZE     = 26
-const ICON_SIZE       = 13
-const BADGE_SIZE      = 16
-const AVATAR_BG       = '#D9E4F3'
-const AVATAR_ICON_CLR = '#2B76B9'
+const AVATAR_SIZE = 26
+const ICON_SIZE   = 13
+const BADGE_SIZE  = 16
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -78,6 +77,7 @@ export default function SaludoHeader({
   onAvatarPress,
   onNotificationsPress,
 }: SaludoHeaderProps) {
+  const { colors } = useTheme()
   const primerNombre = capitalize(getPrimerNombre(nombre))
   const badgeLabel = unreadCount > 99 ? '99+' : unreadCount > 9 ? `${unreadCount}` : `${unreadCount}`
   const showBadge = unreadCount > 0
@@ -85,8 +85,8 @@ export default function SaludoHeader({
   const avatar = (
     <View style={styles.avatarWrap}>
       {/* Círculo fondo claro */}
-      <View style={styles.avatarCircle}>
-        <Ionicons name="person" size={ICON_SIZE} color={AVATAR_ICON_CLR} />
+      <View style={[styles.avatarCircle, { backgroundColor: colors.surfaceHighlight }]}>
+        <Ionicons name="person" size={ICON_SIZE} color={colors.primary} />
       </View>
 
       {/* Badge notificaciones */}
@@ -136,7 +136,6 @@ const styles = StyleSheet.create({
     width: AVATAR_SIZE,
     height: AVATAR_SIZE,
     borderRadius: AVATAR_SIZE / 2,
-    backgroundColor: AVATAR_BG,
     alignItems: 'center',
     justifyContent: 'center',
   },

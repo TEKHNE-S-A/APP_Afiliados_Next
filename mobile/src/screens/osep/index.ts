@@ -12,7 +12,7 @@
 
 // ── OSEP (diseño propio) ──────────────────────────────────────────────────────
 export { default as LoginScreen }          from './LoginScreen'
-export { default as HomeScreen }           from './HomeScreen'
+export { default as HomeScreen }           from '../HomeScreen'
 export { default as CredencialesScreen }   from './CredencialesScreen'
 
 // ── BASE (aún no rediseñadas para OSEP) ───────────────────────────────────────

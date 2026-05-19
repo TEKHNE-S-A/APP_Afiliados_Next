@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth'
 import { fail, ok } from '@/lib/api-response'
 import { httpClient, HttpError } from '@/lib/httpClient'
+import { requireMobileAuth } from '@/lib/require-mobile-auth'
 import { z } from 'zod'
 
 const createSolicitudSiaSchema = z.object({
@@ -8,8 +9,16 @@ const createSolicitudSiaSchema = z.object({
 })
 
 export async function POST(req: Request) {
-  const session = await auth()
-  if (!session) return fail(401, 'UNAUTHORIZED', 'Sesion requerida')
+  let proxyToken = ''
+
+  const bearer = await requireMobileAuth(req)
+  if (!bearer.error) {
+    proxyToken = req.headers.get('authorization')?.replace('Bearer ', '') ?? ''
+  } else {
+    const session = await auth()
+    if (!session) return fail(401, 'UNAUTHORIZED', 'Sesion requerida')
+    proxyToken = session.user.accessToken
+  }
 
   let body: unknown
   try {
@@ -25,7 +34,7 @@ export async function POST(req: Request) {
 
   try {
     const data = await httpClient.post<unknown>('/sia/solicitudes', parsed.data.payload, {
-      token: session.user.accessToken,
+      token: proxyToken,
     })
     return ok(data, 201)
   } catch (error) {
