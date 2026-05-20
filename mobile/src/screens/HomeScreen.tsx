@@ -25,6 +25,7 @@ import BannerPrestadores from '../components/BannerPrestadores'
 import HomeFondoGlass from '../components/HomeFondoGlass'
 import SaludoHeader from '../components/SaludoHeader'
 import { formatFecha } from '../utils/dateUtils'
+import { useNetworkStatus } from '../hooks/useNetworkStatus'
 
 interface DashboardData {
   saldo: number
@@ -36,6 +37,7 @@ interface DashboardData {
 
 export default function HomeScreen() {
   const { user, token, credenciales, signOut, syncCredenciales, isOfflineMode } = useAuth()
+  const { isConnected } = useNetworkStatus()
   const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const { unreadCount } = useNotifications()
@@ -310,15 +312,15 @@ export default function HomeScreen() {
         {/* ── Botonera Principal ─────────────────────────────────────────── */}
         <BotoneraSection refreshTrigger={botoneraRefreshTrigger} />
 
+        {/* ── Novedades ──────────────────────────────────────────────────── */}
+        <NovedadesCarousel offline={!isConnected} autoAdvanceMs={0} />
+
         {/* ── Banner Prestadores — Figma 12156-3029 ─────────────────────── */}
         <View style={[styles.bannerWrap, styles.bannerLast]}>
           <BannerPrestadores
             onPress={() => navigation.navigate('Buscar' as any, { screen: 'CartillaHub' } as never)}
           />
         </View>
-
-        {/* ── Novedades (última sección) ─────────────────────────────────── */}
-        <NovedadesCarousel offline={isOfflineMode} autoAdvanceMs={0} />
       </HomeFondoGlass>
 
 

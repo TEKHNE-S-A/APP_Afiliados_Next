@@ -1,7 +1,8 @@
 import { auth } from '@/lib/auth'
-import { fail, ok } from '@/lib/api-response'
-import { httpClient, HttpError } from '@/lib/httpClient'
+import { fail } from '@/lib/api-response'
+import { NextResponse } from 'next/server'
 import { requireMobileAuth } from '@/lib/require-mobile-auth'
+import { executeSIA, parseSoapResult } from '@/lib/siaClient'
 import { z } from 'zod'
 
 const createSolicitudSiaSchema = z.object({
@@ -9,15 +10,10 @@ const createSolicitudSiaSchema = z.object({
 })
 
 export async function POST(req: Request) {
-  let proxyToken = ''
-
   const bearer = await requireMobileAuth(req)
-  if (!bearer.error) {
-    proxyToken = req.headers.get('authorization')?.replace('Bearer ', '') ?? ''
-  } else {
+  if (bearer.error) {
     const session = await auth()
     if (!session) return fail(401, 'UNAUTHORIZED', 'Sesion requerida')
-    proxyToken = session.user.accessToken
   }
 
   let body: unknown
@@ -33,14 +29,12 @@ export async function POST(req: Request) {
   }
 
   try {
-    const data = await httpClient.post<unknown>('/sia/solicitudes', parsed.data.payload, {
-      token: proxyToken,
-    })
-    return ok(data, 201)
+    const result = await executeSIA('REC_SOLICITUDES_APP', parsed.data.payload)
+    const siaResult = parseSoapResult(result)
+    if (!siaResult.ok) return fail(400, 'SIA_ERROR', siaResult.errorDsc ?? 'Error en servicio SIA', { mensajes: siaResult.mensajes })
+    return NextResponse.json({ success: true, data: siaResult.payload }, { status: 201 })
   } catch (error) {
-    if (error instanceof HttpError) {
-      return fail(error.status, 'BACKEND_ERROR', 'Error en backend SIA', error.body)
-    }
+    console.error('[SIA solicitudes]', error)
     return fail(500, 'INTERNAL_ERROR', 'Error inesperado al crear solicitud SIA')
   }
 }

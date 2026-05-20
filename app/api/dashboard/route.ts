@@ -29,7 +29,7 @@ export async function GET(req: Request) {
 
     // Solicitudes pendientes
     const tramitesPendientes = await prisma.ausolici.count({
-      where: { nuusuid: userId, ausolesta: 'Pendiente' },
+      where: { nuusuid: userId, ausolestad: 'Pendiente' },
     })
 
     // Plan del usuario

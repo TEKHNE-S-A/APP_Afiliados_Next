@@ -54,14 +54,9 @@ const SLIDE_WIDTH = SCREEN_W - ds.space.lg * 2
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-function resolveImageUri(url: string | null, cacheKey?: number | string): string | null {
+function resolveImageUri(url: string | null): string | null {
   if (!url) return null
-  const base = url.startsWith('http') ? url : `${API_BASE_URL}${url}`
-  if (cacheKey === undefined || cacheKey === null) return base
-  // Cache-buster: el backend legado puede sobreescribir la imagen sin cambiar imagen_url,
-  // y <Image> de RN cachea por URI. Renovamos la query en cada load() para forzar refresh.
-  const sep = base.includes('?') ? '&' : '?'
-  return `${base}${sep}cb=${cacheKey}`
+  return url.startsWith('http') ? url : `${API_BASE_URL}${url}`
 }
 
 // ---------------------------------------------------------------------------
@@ -77,7 +72,6 @@ export default function NovedadesCarousel({
   const [loading, setLoading] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
   const [selected, setSelected] = useState<Novedad | null>(null)
-  const [imgCacheKey, setImgCacheKey] = useState<number>(() => Date.now())
 
   const scrollViewRef = useRef<ScrollView>(null)
 
@@ -90,7 +84,6 @@ export default function NovedadesCarousel({
       if (res?.success && Array.isArray(res.noticias)) {
         setNovedades(res.noticias)
         setActiveIndex(0)
-        setImgCacheKey(Date.now())
       }
     } catch {
       // silencioso — novedades son opcionales
@@ -155,7 +148,7 @@ export default function NovedadesCarousel({
             <BannerAnuncios
               titulo={item.titulo}
               subtitulo={item.contenido ?? undefined}
-              imageUri={resolveImageUri(item.imagen_url, imgCacheKey)}
+              imageUri={resolveImageUri(item.imagen_url)}
               onPress={() => handlePress(item)}
             />
           </View>
@@ -210,7 +203,7 @@ export default function NovedadesCarousel({
                 {/* Banner compacto en el modal */}
                 <BannerAnuncios
                   titulo={selected?.titulo ?? ''}
-                  imageUri={resolveImageUri(selected?.imagen_url ?? null, imgCacheKey)}
+                  imageUri={resolveImageUri(selected?.imagen_url ?? null)}
                   style={styles.modalBanner}
                 />
 

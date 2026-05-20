@@ -298,7 +298,7 @@ function HomeTabs() {
 }
 
 function RootNavigator() {
-  const { user, loading } = useAuth()
+  const { user, loading, requiresRelogin } = useAuth()
   const { colors, isDark } = useTheme()
   const [onboardingChecked, setOnboardingChecked] = React.useState(false)
   const [showOnboarding, setShowOnboarding] = React.useState(false)
@@ -340,7 +340,7 @@ function RootNavigator() {
 
   return (
     <NavigationContainer ref={navigationRef} theme={navigationTheme}>
-      {user ? (
+      {user && !requiresRelogin ? (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="MainTabs" component={HomeTabs} />
           <Stack.Screen name="CredencialesHome" component={CredencialesScreen} options={{ headerShown: false }} />

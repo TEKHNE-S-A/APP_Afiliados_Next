@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { apiPost, apiGet, setAuthToken, isNetworkError } from '../services/api'
+import { apiPost, apiGet, setAuthToken, setOnUnauthorizedCallback, isNetworkError } from '../services/api'
 import { StorageManager } from '../services/storageManager'
 import { attachTokensToCredenciales, setTimeoutMinutes } from '../services/tokenService'
 import { API_BASE_URL } from '../config'
@@ -98,6 +98,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToken(null)
     setAuthToken(null)
   }
+
+  // Cuando api.ts recibe un 401, fuerza el re-login sin que cada pantalla lo maneje.
+  useEffect(() => {
+    setOnUnauthorizedCallback(() => {
+      setToken(null)
+      setAuthToken(null)
+      setRequiresRelogin(true)
+    })
+    return () => setOnUnauthorizedCallback(null)
+  }, [])
 
   const isTimeoutLikeError = (e: unknown): boolean => {
     const msg = (e && typeof e === 'object' && 'message' in e) ? String((e as any).message).toLowerCase() : String(e || '').toLowerCase()
@@ -296,8 +306,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (isNetworkError(err)) {
               console.log('🔒 Sesión persistente offline: sin conexión, usando cache')
-            } else if (errMsg.includes('401') || errMsg.toLowerCase().includes('token inválido') || errMsg.toLowerCase().includes('sesión ha expirado') || errMsg.includes('UNAUTHORIZED')) {
-              console.log('🔒 Sesión persistente offline: token expirado pero cache disponible')
+            } else if (errMsg.includes('401') || errMsg.toLowerCase().includes('token') || errMsg.includes('sesión') || errMsg.includes('autenticación')) {
+              console.log('🔒 Sesión persistente offline: token inválido/expirado pero cache disponible')
 
               setRequiresRelogin(true)
 
@@ -392,7 +402,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // Error de red real → mantener modo offline
             console.log('📡 Error de red - mantener modo offline')
             setIsOfflineMode(true)
-          } else if (errMsg.includes('401') || errMsg.toLowerCase().includes('token inválido') || errMsg.toLowerCase().includes('sesión ha expirado') || errMsg.includes('UNAUTHORIZED')) {
+          } else if (errMsg.includes('401')) {
             // Token rechazado con conexión: mantener cache, pero invalidar token para evitar loops
             console.log('❌ Token inválido/expirado - se invalida token, cache queda disponible')
             await clearAuthTokenKeepCache()
@@ -890,7 +900,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // NO activar modo offline si hay conexión
         console.log('Error al refrescar credenciales:', e)
         const errMsg = (e && typeof e === 'object' && 'message' in e) ? String(e.message) : ''
-        if (errMsg.includes('401') || errMsg.toLowerCase().includes('token inválido') || errMsg.toLowerCase().includes('sesión ha expirado') || errMsg.includes('UNAUTHORIZED')) {
+        if (errMsg.includes('401')) {
           console.log('⚠️  Token inválido - requiere re-login')
           await clearAuthTokenKeepCache()
           setRequiresRelogin(true)
@@ -1018,7 +1028,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // NO activar modo offline si hay conexión
         console.error('Error al sincronizar credenciales:', e)
         const errMsg = (e && typeof e === 'object' && 'message' in e) ? String(e.message) : ''
-        if (errMsg.includes('401') || errMsg.toLowerCase().includes('token inválido') || errMsg.toLowerCase().includes('sesión ha expirado') || errMsg.includes('UNAUTHORIZED')) {
+        if (errMsg.includes('401')) {
           console.log('⚠️  Token inválido - requiere re-login')
           await clearAuthTokenKeepCache()
           setRequiresRelogin(true)

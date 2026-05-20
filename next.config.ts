@@ -48,6 +48,7 @@ const nextConfig: NextConfig = {
       { source: '/sia/prestaciones',                        destination: '/api/sia/prestaciones' },
       { source: '/sia/enrolamientos',                       destination: '/api/sia/enrolamientos' },
       { source: '/sia/crear-solicitud',                     destination: '/api/sia/crear-solicitud' },
+      { source: '/mis-autorizaciones',                     destination: '/api/mis-autorizaciones' },
       { source: '/mis-autorizaciones/:id/fotos',            destination: '/api/mis-autorizaciones/:id/fotos' },
       { source: '/solicitudes',                             destination: '/api/solicitudes' },
       { source: '/notificaciones',                          destination: '/api/notificaciones' },

@@ -4,6 +4,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 
 let AUTH_TOKEN: string | null = null
 let BASE_URL = API_BASE_URL
+let onUnauthorizedCallback: (() => void) | null = null
+
+/** Registra un callback que se invoca cuando cualquier request recibe 401.
+ *  AuthContext lo usa para forzar el re-login sin que cada pantalla lo maneje. */
+export function setOnUnauthorizedCallback(cb: (() => void) | null) {
+  onUnauthorizedCallback = cb
+}
 
 //const GET_TIMEOUT = 30000 // 30 segundos
 //const POST_TIMEOUT = 60000 // 60 segundos
@@ -87,8 +94,8 @@ async function throwApiErrorFrom(status: number, text: string) {
     message = text
   }
 
-  // Si el backend reporta TOKEN_EXPIRED, limpiamos token persistido para evitar loops.
-  if (status === 401 && (code === 'TOKEN_EXPIRED' || text.includes('TOKEN_EXPIRED'))) {
+  // Cualquier 401 invalida el token persistido para evitar loops de reintento.
+  if (status === 401) {
     try {
       await AsyncStorage.removeItem('auth_token')
       await AsyncStorage.removeItem('refresh_token')
@@ -96,11 +103,11 @@ async function throwApiErrorFrom(status: number, text: string) {
     } catch {
       // ignore
     }
-    throw new Error('Tu sesión ha expirado. Por favor inicia sesión nuevamente.')
-  }
-
-  // Para errores 401, mostrar mensaje específico del backend
-  if (status === 401) {
+    // Notificar al AuthContext para que redirija al login
+    onUnauthorizedCallback?.()
+    if (code === 'TOKEN_EXPIRED' || text.includes('TOKEN_EXPIRED')) {
+      throw new Error('Tu sesión ha expirado. Por favor inicia sesión nuevamente.')
+    }
     if (message) {
       throw new Error(message)
     }

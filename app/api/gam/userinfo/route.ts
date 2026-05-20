@@ -1,25 +1,26 @@
-import { auth } from '@/lib/auth'
 import { fail, ok } from '@/lib/api-response'
-import { httpClient, HttpError } from '@/lib/httpClient'
 import { requireMobileAuth } from '@/lib/require-mobile-auth'
+import { gamGetUserInfo, GamError } from '@/lib/gamClient'
 
 export async function GET(req: Request) {
-  let proxyToken = ''
   const bearer = await requireMobileAuth(req)
-  if (!bearer.error) {
-    proxyToken = req.headers.get('authorization')?.replace('Bearer ', '') ?? ''
-  } else {
-    const session = await auth()
-    if (!session) return fail(401, 'UNAUTHORIZED', 'Sesion requerida')
-    proxyToken = session.user.accessToken
-  }
+  if (bearer.error) return bearer.error
 
-  const qs = new URL(req.url).search
+  // El token GAM viaja en Authorization: Bearer <gamToken>
+  // (distinto al JWT mobile: en este endpoint se reenvía tal cual a GAM)
+  const authHeader = req.headers.get('authorization')
+  if (!authHeader?.startsWith('Bearer ')) return fail(401, 'UNAUTHORIZED', 'Token de autorización requerido')
+
+  const gamToken = authHeader.substring(7)
+
   try {
-    const data = await httpClient.get<unknown>(`/gam/userinfo${qs}`, { token: proxyToken })
+    const data = await gamGetUserInfo(gamToken)
     return ok(data)
   } catch (error) {
-    if (error instanceof HttpError) return fail(error.status, 'BACKEND_ERROR', 'Error en backend GAM', error.body)
+    if (error instanceof GamError && error.statusCode === 401) {
+      return fail(401, 'GAM_UNAUTHORIZED', 'Token inválido o expirado')
+    }
+    console.error('[GAM userinfo]', error)
     return fail(500, 'INTERNAL_ERROR', 'Error inesperado en GAM userinfo')
   }
 }

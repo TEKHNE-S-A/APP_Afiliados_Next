@@ -4,14 +4,14 @@
     "slug": "app-afiliados",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/branding/icon.png",
+    "icon": "./assets/branding/osep-logo.png",
     "platforms": [
       "ios",
       "android",
       "web"
     ],
     "splash": {
-      "image": "./assets/branding/osep-splash-square.png",
+      "image": "./assets/branding/osep-logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#0D47A1"
     },
@@ -27,7 +27,7 @@
       "versionCode": 1,
       "package": "com.tekhnedesarrollo.demo",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/branding/adaptive-icon.png",
+        "foregroundImage": "./assets/branding/osep-logo.png",
         "backgroundColor": "#0D47A1"
       },
       "permissions": [
@@ -64,7 +64,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/branding/osep-logo-white.png",
+          "icon": "./assets/branding/osep-logo.png",
           "color": "#0D47A1",
           "sounds": [],
           "mode": "production"
