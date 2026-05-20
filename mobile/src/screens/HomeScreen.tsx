@@ -324,7 +324,7 @@ export default function HomeScreen() {
         <BotoneraSection refreshTrigger={botoneraRefreshTrigger} />
 
         {/* ── Novedades ──────────────────────────────────────────────────── */}
-        <NovedadesCarousel offline={!isConnected} autoAdvanceMs={0} />
+        <NovedadesCarousel offline={!isConnected} />
 
         {/* ── Banner Prestadores — Figma 12156-3029 ─────────────────────── */}
         <View style={[styles.bannerWrap, styles.bannerLast]}>
