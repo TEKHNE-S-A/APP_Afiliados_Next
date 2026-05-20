@@ -2,10 +2,13 @@
 .env.local
 .env.*.local
 node_modules/
+trash/
 .next/
 out/
 dist/
 *.log
+*.apk
+*.aab
+*.ipa
 .DS_Store
-prototipo/node_modules/
 mobile/node_modules/

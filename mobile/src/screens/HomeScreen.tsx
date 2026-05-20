@@ -55,7 +55,18 @@ export default function HomeScreen() {
 
   // Obtener credencial del titular (crcrepropi === 'S')
   const credencialTitular = credenciales?.find(c => c.crcrepropi === 'S') || credenciales?.[0]
-  
+
+  // Credenciales ordenadas: primero quien se logueó (match por CUIL), luego el resto
+  const credencialesOrdenadas = React.useMemo(() => {
+    if (!credenciales?.length) return credenciales
+    const cuilLogueado = user?.cuil ? String(user.cuil).replace(/\D/g, '') : null
+    const esLogueado = (c: typeof credenciales[0]) =>
+      cuilLogueado ? String(c.crcrecuil).replace(/\D/g, '') === cuilLogueado : c.crcrepropi === 'S'
+    const propias = credenciales.filter(esLogueado)
+    const resto = credenciales.filter(c => !esLogueado(c))
+    return [...propias, ...resto]
+  }, [credenciales, user?.cuil])
+
   // Total de miembros del grupo familiar
   const totalMiembros = credenciales?.length || 0
   const miembrosFamiliares = credenciales?.filter(c => c.crcrepropi === 'N').length || 0
@@ -269,7 +280,7 @@ export default function HomeScreen() {
 
       {/* ── Carrusel Credenciales — Figma 12156-3215 ─────────── */}
       <View style={styles.carouselWrap}>
-        {credenciales.length > 0 ? (
+        {credencialesOrdenadas.length > 0 ? (
           <>
             <ScrollView
               horizontal
@@ -280,7 +291,7 @@ export default function HomeScreen() {
                 setActiveCredIndex(Math.round(e.nativeEvent.contentOffset.x / SCREEN_W))
               }
             >
-              {credenciales.map((cred, idx) => (
+              {credencialesOrdenadas.map((cred, idx) => (
                 <View key={(cred.crcreid ?? '') + idx} style={styles.carouselPage}>
                   <CredencialReducida
                     credencial={cred}
@@ -289,9 +300,9 @@ export default function HomeScreen() {
                 </View>
               ))}
             </ScrollView>
-            {credenciales.length > 1 && (
+            {credencialesOrdenadas.length > 1 && (
               <View style={styles.dotsRow}>
-                {credenciales.map((_, i) => (
+                {credencialesOrdenadas.map((_, i) => (
                   <View key={i} style={[styles.dot, i === activeCredIndex && styles.dotActive]} />
                 ))}
               </View>

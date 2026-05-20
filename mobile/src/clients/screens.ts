@@ -44,6 +44,4 @@ export const {
   InfoUtilScreen,
   AyudaScreen,
   NotificationPreferencesScreen,
-  ProfileScreen,
-  TransactionsScreen,
 } = Screens

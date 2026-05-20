@@ -37,5 +37,3 @@ export { default as DelegacionDetalleScreen }     from '../DelegacionDetalleScre
 export { default as InfoUtilScreen }              from '../InfoUtilScreen'
 export { default as AyudaScreen }                 from '../AyudaScreen'
 export { default as NotificationPreferencesScreen } from '../NotificationPreferencesScreen'
-export { default as ProfileScreen }               from '../ProfileScreen'
-export { default as TransactionsScreen }          from '../TransactionsScreen'
